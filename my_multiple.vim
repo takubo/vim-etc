@@ -1,3 +1,8 @@
+if !has("gui_running")
+    echoerr 'my_multiple suppote GUI only.'
+    finish
+endif
+
 if exists('loaded_my_multiple')
     "finish
 endif
@@ -7,85 +12,31 @@ let g:my_multiple = v:true
 
 "-----------------------------------------------------------------------------------------------------------
 
-" -----
-" Min: Returns the minimum of the given parameters.
-" -----
-function! s:Min(...)
-    let min = a:1
-    let index = 2
-    while index <= a:0
-        execute "if min > a:" . index . " | let min = a:" . index . " | endif"
-        let index = index + 1
-    endwhile
-    return min
-endfunction
-
-" -----
-" Max: Returns the maximum of the given parameters.
-" -----
-function! s:Max(...)
-    let max = a:1
-    let index = 2
-    while index <= a:0
-        execute "if max < a:" . index . " | let max = a:" . index . " | endif"
-        let index = index + 1
-    endwhile
-    return max
-endfunction
-
-" -----
-" ItemCount: Returns the number of items in the given string.
-" -----
-function! s:ItemCount(string)
-    let itemCount = 0
-    let newstring = a:string
-    let pos = stridx(newstring, ',')
-    while pos > -1
-        let itemCount = itemCount + 1
-        let newstring = strpart(newstring, pos + 1)
-        let pos = stridx(newstring, ',')
-    endwhile
-    return itemCount
-endfunction
-
-" -----
-" Strntok: Utility function to implement C-like strntok() by Michael Geddes
-" and Benji Fisher at http://groups.yahoo.com/group/vimdev/message/26788
-" -----
-function! s:Strntok( s, tok, n)
-    return matchstr( a:s.a:tok[0], '\v(\zs([^'.a:tok.']*)\ze['.a:tok.']){'.a:n.'}')
-endfun
-
-"-----------------------------------------------------------------------------------------------------------
-
 function! s:MultipleSearchInit()
-    "let s:ColorSequence = "red,yellow,blue,green,magenta,cyan,gray,brown"
-    "let s:TextColorSequence = "white,black,white,black,white,black,black,white"
-    let ColorSequence =     "blue,yellow,green,magenta,cyan,#ee8822,#22ee88,#8822ee,#ee2288,#2288ee"
-    let TextColorSequence = "white,black,black,white,black,black,black,black,black,black"
+    let ColorSequence        = [ "blue",  "yellow", "green", "magenta", "cyan",  "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
+    let TextColorSequence    = [ "white", "black",  "black", "white",   "black", "black",   "black",   "black",   "black",   "black"   ]
+
+    if len(ColorSequence) != len(TextColorSequence)
+	echoerr 'len(ColorSequence) != len(TextColorSequence)'
+	finish
+    endif
+
+    let s:MaxColors = len(ColorSequence)
 
     " Start off with the first color
     let s:colorToUse = 0
-    "let s:colorsInUse = 0
-
-    "let s:MaxColors = s:Min(s:MaxColors, s:ItemCount(ColorSequence . ','), s:ItemCount(TextColorSequence . ','))
-    let s:MaxColors = s:Min(s:ItemCount(ColorSequence . ','), s:ItemCount(TextColorSequence . ','))
 
     " hi Search	と同じにしておく
-    hi MultipleSearchOrg	guifg=#ffffff guibg=#ff0000 gui=NONE
+    hi MultipleSearchOrg guifg=white guibg=red gui=NONE
 
-    let loopCount = 0
-    while loopCount < s:MaxColors
+    for i in range(s:MaxColors)
+	let bgColor = ColorSequence[i]
+	let fgColor = TextColorSequence[i]
+
         " Define the colors to use
-	let bgColor = s:Strntok(ColorSequence, ',', loopCount + 1)
-	let fgColor = s:Strntok(TextColorSequence, ',', loopCount + 1)
-        execute 'highlight MultipleSearch' . loopCount
-           \ . ' guibg=' . bgColor
-           \ . ' guifg=' . fgColor
-           "\ . ' ctermbg=' . bgColor . ' guibg=' . bgColor
-           "\ . ' ctermfg=' . fgColor . ' guifg=' . fgColor
-        let loopCount = loopCount + 1
-    endwhile
+        execute 'highlight MultipleSearch' . i
+          \ . ' guibg=' . bgColor . ' guifg=' . fgColor
+    endfor
 endfunction
 
 " -----
@@ -94,8 +45,7 @@ endfunction
 function! s:GetNextSequenceNumber()
     let retval = s:colorToUse
 
-    let s:colorToUse = s:colorToUse + 1
-    let s:colorToUse = s:colorToUse % s:MaxColors
+    let s:colorToUse = (s:colorToUse + 1) % s:MaxColors
 
     return retval
 endfunction
@@ -184,7 +134,7 @@ function! DoReset(force)
     endif
 
     let now_buf = bufnr("")
-    call PushPos()
+    PushPos
 
     let g:mymy = 0
     "? hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
@@ -203,14 +153,13 @@ function! DoReset(force)
     endwhile
 
     exe "b " . now_buf
-    call PopPos()
+    PopPos
 endfunction
 
 function! ReDo()
     if !g:my_multiple | return '' | endif
 
-"function! s:ReDo()
-    call PushPos()
+    PushPos
     let now_buf = bufnr("")
 
     let g:mymy = 1
@@ -229,7 +178,7 @@ function! ReDo()
     endwhile
 
     exe "b " . now_buf
-    call PopPos()
+    PopPos
     return ""
 endfunction
 command! Redo echo ReDo()

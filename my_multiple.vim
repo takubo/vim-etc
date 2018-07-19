@@ -6,12 +6,16 @@ endif
 if exists('loaded_my_multiple')
     "finish
 endif
-let loaded_my_multiple = 1
+let loaded_my_multiple = v:true
 
 let g:my_multiple = v:true
 
 "-----------------------------------------------------------------------------------------------------------
 
+
+" ---------------
+" MultipleSearchInit:
+" ---------------
 function! s:MultipleSearchInit()
     let ColorSequence        = [ "blue",  "yellow", "green", "magenta", "cyan",  "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
     let TextColorSequence    = [ "white", "black",  "black", "white",   "black", "black",   "black",   "black",   "black",   "black"   ]
@@ -23,25 +27,23 @@ function! s:MultipleSearchInit()
 
     let s:MaxColors = len(ColorSequence)
 
-    " Start off with the first color
-    let s:colorToUse = 0
-
-    " hi Search	と同じにしておく
+    " hi Search の代替色
     hi MultipleSearchOrg guifg=white guibg=red gui=NONE
 
+    " Set Highlight
     for i in range(s:MaxColors)
 	let bgColor = ColorSequence[i]
 	let fgColor = TextColorSequence[i]
 
-        " Define the colors to use
         execute 'highlight MultipleSearch' . i
           \ . ' guibg=' . bgColor . ' guifg=' . fgColor
     endfor
 endfunction
 
-" -----
+
+" ---------------
 " GetNextSequenceNumber: Determine the next Search color to use.
-" -----
+" ---------------
 function! s:GetNextSequenceNumber()
     let retval = s:colorToUse
 
@@ -50,18 +52,21 @@ function! s:GetNextSequenceNumber()
     return retval
 endfunction
 
-function! s:Mymy(word)
+
+" ---------------
+" Mymy_Search: 
+" ---------------
+function! s:Mymy_Search(word)
     if !g:my_multiple | return '' | endif
 
     let org_search = @/
     "let @/ = @/ . '\|\<' . a:word . '\>'
-    "statusline let
 
     call PushPos()
 
     let now_buf = bufnr("")
 
-    if g:mymy == 0
+    if g:new_search == 0
 	let s:colorToUse = 0
 	"let g:synstr_org = 'bufdo syntax match MultipleSearchOrg "' . @/ . '" containedin=ALL'
 	let g:synstr_org = 'syntax match MultipleSearchOrg "' . org_search . '" containedin=ALL'
@@ -78,7 +83,7 @@ function! s:Mymy(word)
     endif
     "exe "b " . now_buf
 
-    let g:mymy = 1
+    let g:new_search = 1
     "echo a:word
     let n = <SID>GetNextSequenceNumber()
     let useSearch = "MultipleSearch" . n
@@ -106,17 +111,20 @@ function! s:Mymy(word)
     return ""
 endfunction
 
+nnoremap <silent> ! :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
+
+
 " ---
 " DoReset: Clear the highlighting
 " ---
 "function! DoReset()
-"    if g:mymy == 0
+"    if g:new_search == 0
 "	return
 "    endif
 "
 "    let now_buf = bufnr("")
 "
-"    let g:mymy = 0
+"    let g:new_search = 0
 "    hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
 "    bufdo execute 'bufdo syntax clear MultipleSearchOrg'
 "
@@ -129,14 +137,14 @@ endfunction
 "    exe "b " . now_buf
 "endfunction
 function! DoReset(force)
-    if g:mymy == 0 && !a:force
+    if g:new_search == 0 && !a:force
 	return
     endif
 
     let now_buf = bufnr("")
     PushPos
 
-    let g:mymy = 0
+    let g:new_search = 0
     "? hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
     hi	Search	guibg=#c0504d	guifg=white
 
@@ -162,7 +170,7 @@ function! ReDo()
     PushPos
     let now_buf = bufnr("")
 
-    let g:mymy = 1
+    let g:new_search = 1
     hi Search	guifg=NONE guibg=NONE gui=NONE
 
     while 1
@@ -187,8 +195,11 @@ command! Redo echo ReDo()
 
 hi Search guibg=#c0504d guifg=white
 
+" Start off with the first color
+let s:colorToUse = 0
+let g:new_search = 0
+
 call <SID>MultipleSearchInit()
-let g:mymy = 0
 call DoReset(10)
 
 let g:synstr = ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
@@ -197,10 +208,9 @@ nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
 nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
 nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
 
-nnoremap <silent> ! :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
 nnoremap & /<C-p>\\|
-"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy("<C-r><C-w>")<CR><CR><CR>
-"nnoremap & :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>
+"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy_Search("<C-r><C-w>")<CR><CR><CR>
+"nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
 
 
@@ -208,12 +218,12 @@ nnoremap & /<C-p>\\|
 " 新規バッファを開いたときに、auで色を付けないといけない。
 "
 "function! ForceReset()
-"    "if g:mymy == 0
+"    "if g:new_search == 0
 "    "endif
 "
 "    "let now_buf = bufnr("")
 "
-"    "let g:mymy = 0
+"    "let g:new_search = 0
 "    "hi Search	guifg=#000000 guibg=#00eeee gui=NONE
 "    "bufdo execute 'bufdo syntax clear MultipleSearchOrg'
 "
@@ -225,12 +235,12 @@ nnoremap & /<C-p>\\|
 "
 "    "exe "b " . now_buf
 "
-"    if g:mymy == 0
+"    if g:new_search == 0
 "    endif
 "
 "    let now_buf = bufnr("")
 "
-"    let g:mymy = 0
+"    let g:new_search = 0
 "    hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
 "    bufdo execute 'bufdo syntax clear MultipleSearchOrg'
 "

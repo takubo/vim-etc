@@ -1,4 +1,11 @@
-let g:my_multiple=1
+if exists('loaded_my_multiple')
+    "finish
+endif
+let loaded_my_multiple = 1
+
+let g:my_multiple = v:true
+
+"-----------------------------------------------------------------------------------------------------------
 
 " -----
 " Min: Returns the minimum of the given parameters.
@@ -12,6 +19,10 @@ function! s:Min(...)
     endwhile
     return min
 endfunction
+
+" -----
+" Max: Returns the maximum of the given parameters.
+" -----
 function! s:Max(...)
     let max = a:1
     let index = 2
@@ -45,18 +56,20 @@ function! s:Strntok( s, tok, n)
     return matchstr( a:s.a:tok[0], '\v(\zs([^'.a:tok.']*)\ze['.a:tok.']){'.a:n.'}')
 endfun
 
+"-----------------------------------------------------------------------------------------------------------
+
 function! s:MultipleSearchInit()
     "let s:ColorSequence = "red,yellow,blue,green,magenta,cyan,gray,brown"
     "let s:TextColorSequence = "white,black,white,black,white,black,black,white"
-    let s:ColorSequence =     "blue,yellow,green,magenta,cyan,#ee8822,#22ee88,#8822ee,#ee2288,#2288ee"
-    let s:TextColorSequence = "white,black,black,white,black,black,black,black,black,black"
+    let ColorSequence =     "blue,yellow,green,magenta,cyan,#ee8822,#22ee88,#8822ee,#ee2288,#2288ee"
+    let TextColorSequence = "white,black,black,white,black,black,black,black,black,black"
 
     " Start off with the first color
     let s:colorToUse = 0
     "let s:colorsInUse = 0
 
-    "let s:MaxColors = s:Min(s:MaxColors, s:ItemCount(s:ColorSequence . ','), s:ItemCount(s:TextColorSequence . ','))
-    let s:MaxColors = s:Min(s:ItemCount(s:ColorSequence . ','), s:ItemCount(s:TextColorSequence . ','))
+    "let s:MaxColors = s:Min(s:MaxColors, s:ItemCount(ColorSequence . ','), s:ItemCount(TextColorSequence . ','))
+    let s:MaxColors = s:Min(s:ItemCount(ColorSequence . ','), s:ItemCount(TextColorSequence . ','))
 
     " hi Search	と同じにしておく
     hi MultipleSearchOrg	guifg=#ffffff guibg=#ff0000 gui=NONE
@@ -64,8 +77,8 @@ function! s:MultipleSearchInit()
     let loopCount = 0
     while loopCount < s:MaxColors
         " Define the colors to use
-	let bgColor = s:Strntok(s:ColorSequence, ',', loopCount + 1)
-	let fgColor = s:Strntok(s:TextColorSequence, ',', loopCount + 1)
+	let bgColor = s:Strntok(ColorSequence, ',', loopCount + 1)
+	let fgColor = s:Strntok(TextColorSequence, ',', loopCount + 1)
         execute 'highlight MultipleSearch' . loopCount
            \ . ' guibg=' . bgColor
            \ . ' guifg=' . fgColor
@@ -87,9 +100,9 @@ function! s:GetNextSequenceNumber()
     return retval
 endfunction
 
-call <SID>MultipleSearchInit()
-
 function! s:Mymy(word)
+    if !g:my_multiple | return '' | endif
+
     let org_search = @/
     "let @/ = @/ . '\|\<' . a:word . '\>'
     "statusline let
@@ -143,17 +156,6 @@ function! s:Mymy(word)
     return ""
 endfunction
 
-"? hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
-hi	Search	guibg=#c0504d	guifg=white
-
-nnoremap <silent> & :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
-nnoremap <silent> ! :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
-nnoremap & /<C-p>\\|
-"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy("<C-r><C-w>")<CR><CR><CR>
-"nnoremap & :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>
-
-
-
 " ---
 " DoReset: Clear the highlighting
 " ---
@@ -203,22 +205,13 @@ function! DoReset(force)
     exe "b " . now_buf
     call PopPos()
 endfunction
-let g:mymy = 0
-call DoReset(10)
-
-
-"nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call DoReset(0)<CR>
-nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
-nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
-nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
-
-
 
 function! ReDo()
+    if !g:my_multiple | return '' | endif
+
 "function! s:ReDo()
     call PushPos()
     let now_buf = bufnr("")
-    let save_cursor = getcurpos()
 
     let g:mymy = 1
     hi Search	guifg=NONE guibg=NONE gui=NONE
@@ -241,7 +234,25 @@ function! ReDo()
 endfunction
 command! Redo echo ReDo()
 
+
+
+hi Search guibg=#c0504d guifg=white
+
+call <SID>MultipleSearchInit()
+let g:mymy = 0
+call DoReset(10)
+
 let g:synstr = ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
+
+nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
+nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
+nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
+
+nnoremap <silent> ! :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
+nnoremap & /<C-p>\\|
+"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy("<C-r><C-w>")<CR><CR><CR>
+"nnoremap & :<Esc>:call <SID>Mymy("<C-r><C-w>")<CR>
+
 
 
 " TODO
@@ -292,7 +303,7 @@ let g:synstr = ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
 function! C_Func_Name()
 	let fname = ""
 
-	call PushPos()
+	PushPos
 
 	normal! [[
 	let p1 = line('.')
@@ -307,34 +318,40 @@ function! C_Func_Name()
 	endif
 	"echo p1
 
-	call PopPos()
+	ApplyPos
 	normal! []
 	let p2 = line('.')
 	"echo p2
 
-	call PopPos()
+	ApplyPos
 	normal! ]]
 	let p3 = line('.')
 	"echo p3
 
-	call PopPos()
+	ApplyPos
 	normal! []
 	let p4 = line('.')
 	"echo p4
 
-	call PopPos()
+	PopPos
 
 	return fname
 endfunction
+
 com! FF call C_Func_Name()
-nnoremap \h :FF<CR>
-nnoremap <silent> n n:FF<CR>
-nnoremap <silent> N N:FF<CR>
+
+nnoremap \F :FF<CR>
+
 augroup C_Func_Name
 	au!
+	au BufEnter *.{c,h} call C_Func_Name()
 	au WinEnter *.{c,h} call C_Func_Name()
 augroup end
+nnoremap <silent> n n:FF<CR>
+nnoremap <silent> N N:FF<CR>
+
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:FF<CR>')
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:call feedkeys("FF\<CR>")
+
 cnoremap <C-r><C-f> <C-R>=C_Func_Name()<CR>
 cnoremap <C-r>f <C-r><C-f>

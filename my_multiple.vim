@@ -23,8 +23,8 @@ endfunction
 " Mymy_PopPos: 
 " ---------------
 function! Mymy_PopPos()
-    exe 'tabnext ' . s:now_tab
-    exe s:now_win . 'wincmd w'
+    silent exe 'tabnext ' . s:now_tab
+    silent exe s:now_win . 'wincmd w'
     "PopPos
 endfunction
 
@@ -68,16 +68,20 @@ function! s:Mymy_Search(word)
 
     if g:new_search == 0
 	let g:new_search = 1
+	let s:Search_num = 0
 	let g:Search_Str = []
 
 	silent tabdo windo call matchadd('MultipleSearchOrg', @/, 2, 4 + s:Search_num)
+
+	call add(g:Search_Str, @/)
 
 	let s:colorToUse = 0
 	let s:Search_num += 1
     endif
 
-    let search_hi = "MultipleSearch" . s:colorToUse
-    silent tabdo windo call matchadd(search_hi, a:word, 1, 4 + s:Search_num)
+    silent tabdo windo call matchadd('MultipleSearch' . s:colorToUse, a:word, 1, 4 + s:Search_num)
+
+    call add(g:Search_Str, a:word)
 
     let s:colorToUse = (s:colorToUse + 1) % s:MaxColors
     let s:Search_num += 1
@@ -100,33 +104,21 @@ function! DoReset(force)
     call Mymy_PopPos()
 
     let s:colorToUse = 0
-    let s:Search_num = 0
     let g:new_search = 0
 endfunction
 
 function! ReDo()
     if !g:my_multiple | return '' | endif
 
-    PushPos
-    let now_buf = bufnr("")
-
     let g:new_search = 1
 
-    while 1
-	execute g:synstr_org
+    call Mymy_PushPos()
+    silent tabdo windo call matchadd('MultipleSearchOrg', g:Search_Str[0], 2, 4 + 0)
+    "-1と+1はOrgの分
+    silent tabdo windo for i in range(s:Search_num - 1) | call matchadd('MultipleSearch' . (i % s:MaxColors), g:Search_Str[i + 1], 1, 4 + i + 1) | endfor
+    call Mymy_PopPos()
 
-	let seq = 0
-	while seq < s:colorToUse
-	    execute g:synstr[seq]
-	    let seq = seq + 1
-	endwhile
-	keepjumps bnext
-	if now_buf == bufnr("") | break | endif
-    endwhile
-
-    exe "b " . now_buf
-    PopPos
-    return ""
+    return ''
 endfunction
 command! Redo echo ReDo()
 

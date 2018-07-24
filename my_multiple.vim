@@ -10,49 +10,6 @@ endif
 
 let g:my_multiple = v:true
 
-"-----------------------------------------------------------------------------------------------------------
-
-
-" ---------------
-" MultipleSearchInit:
-" ---------------
-function! s:MultipleSearchInit()
-    let ColorSequence        = [ "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
-    let TextColorSequence    = [ "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
-
-    if len(ColorSequence) != len(TextColorSequence)
-	echoerr 'len(ColorSequence) != len(TextColorSequence)'
-	finish
-    endif
-
-    let s:MaxColors = len(ColorSequence)
-
-    " hi Search の代替色
-    hi MultipleSearchOrg guifg=white guibg=red gui=NONE
-
-    " Set Highlight
-    for i in range(s:MaxColors)
-	let bgColor = ColorSequence[i]
-	let fgColor = TextColorSequence[i]
-
-        execute 'highlight MultipleSearch' . i
-          \ . ' guibg=' . bgColor . ' guifg=' . fgColor
-    endfor
-endfunction
-
-
-" ---------------
-" GetNextSequenceNumber: Determine the next Search color to use.
-" ---------------
-function! s:GetNextSequenceNumber()
-    let retval = s:colorToUse
-
-    let s:colorToUse = (s:colorToUse + 1) % s:MaxColors
-
-    return retval
-endfunction
-
-
 " ---------------
 " Mymy_PushPos: 
 " ---------------
@@ -72,6 +29,34 @@ function! Mymy_PopPos()
 endfunction
 
 " ---------------
+" MultipleSearchInit:
+" ---------------
+function! s:MultipleSearchInit()
+    let BgColorSequence = [ "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
+    let FgColorSequence = [ "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
+
+    let s:MaxColors = len(BgColorSequence)
+
+    " hi Search の代替色
+    hi MultipleSearchOrg guifg=white guibg=red gui=NONE
+
+    " Set Highlight
+    for i in range(s:MaxColors)
+        execute 'highlight MultipleSearch' . i . ' guifg=' . FgColorSequence[i] . ' guibg=' . BgColorSequence[i]
+    endfor
+
+    " Init Vars
+    let s:colorToUse = 0
+    let g:new_search = 0
+    let s:Search_num = 0
+
+    let g:Search_Str = []
+
+    " Reset Highlight
+    call DoReset(10)
+endfunction
+
+" ---------------
 " Mymy_Search: 
 " ---------------
 function! s:Mymy_Search(word)
@@ -82,19 +67,20 @@ function! s:Mymy_Search(word)
     call Mymy_PushPos()
 
     if g:new_search == 0
+	let g:new_search = 1
+	let g:Search_Str = []
+
+	silent tabdo windo call matchadd('MultipleSearchOrg', @/, 2, 4 + s:Search_num)
+
 	let s:colorToUse = 0
 	let s:Search_num += 1
-	silent tabdo windo call matchadd('MultipleSearchOrg', @/, 2, 3 + s:Search_num)
     endif
 
-    let g:new_search = 1
+    let search_hi = "MultipleSearch" . s:colorToUse
+    silent tabdo windo call matchadd(search_hi, a:word, 1, 4 + s:Search_num)
 
-    let n = <SID>GetNextSequenceNumber()
-    let useSearch = "MultipleSearch" . n
-
+    let s:colorToUse = (s:colorToUse + 1) % s:MaxColors
     let s:Search_num += 1
-
-    silent tabdo windo call matchadd(useSearch, a:word, 1, 3 + s:Search_num)
 
     call Mymy_PopPos()
 
@@ -103,46 +89,19 @@ endfunction
 
 nnoremap <silent> ! :<Esc>:call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
 
-
 " ---
 " DoReset: Clear the highlighting
 " ---
-"function! DoReset()
-"    if g:new_search == 0
-"	return
-"    endif
-"
-"    let now_buf = bufnr("")
-"
-"    let g:new_search = 0
-"    hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
-"    bufdo execute 'bufdo syntax clear MultipleSearchOrg'
-"
-"    let seq = 0
-"    while seq < s:MaxColors
-"	bufdo execute 'bufdo syntax clear MultipleSearch' . seq
-"	let seq = seq + 1
-"    endwhile
-"
-"    exe "b " . now_buf
-"endfunction
 function! DoReset(force)
-    if g:new_search == 0 && !a:force
-	return
-    endif
+    if g:new_search == 0 && !a:force | return | endif
 
     call Mymy_PushPos()
-    "silent tabdo windo call clearmatches()
-
-    "orgの分をプラス1
-    silent tabdo windo for i in range(s:Search_num) | call matchdelete(3 + i + 1) | endfor
-
+    silent tabdo windo for i in range(s:Search_num) | call matchdelete(4 + i) | endfor
     call Mymy_PopPos()
 
     let s:colorToUse = 0
     let s:Search_num = 0
     let g:new_search = 0
-
 endfunction
 
 function! ReDo()
@@ -152,7 +111,6 @@ function! ReDo()
     let now_buf = bufnr("")
 
     let g:new_search = 1
-    hi Search	guifg=NONE guibg=NONE gui=NONE
 
     while 1
 	execute g:synstr_org
@@ -172,19 +130,7 @@ function! ReDo()
 endfunction
 command! Redo echo ReDo()
 
-" Start off with the first color
-let s:colorToUse = 0
-let g:new_search = 0
-let s:Search_num = 0
-
-call Mymy_PushPos()
-silent tabdo windo call clearmatches()
-call Mymy_PopPos()
-
 call <SID>MultipleSearchInit()
-call DoReset(10)
-
-let g:synstr = ["", "", "", "", "", "", "", "", "", "", "", "", "", ""]
 
 nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
 nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
@@ -195,46 +141,9 @@ nnoremap & /<C-p>\\|
 "nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
 
-
 " TODO
-" 新規バッファを開いたときに、auで色を付けないといけない。
+" 新規Windowを開いたときに、auで色を付けないといけない。
 "
-"function! ForceReset()
-"    "if g:new_search == 0
-"    "endif
-"
-"    "let now_buf = bufnr("")
-"
-"    "let g:new_search = 0
-"    "hi Search	guifg=#000000 guibg=#00eeee gui=NONE
-"    "bufdo execute 'bufdo syntax clear MultipleSearchOrg'
-"
-"    "let seq = 0
-"    "while seq < 20
-"    "    bufdo execute 'bufdo syntax clear MultipleSearch' . seq
-"    "    let seq = seq + 1
-"    "endwhile
-"
-"    "exe "b " . now_buf
-"
-"    if g:new_search == 0
-"    endif
-"
-"    let now_buf = bufnr("")
-"
-"    let g:new_search = 0
-"    hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
-"    bufdo execute 'bufdo syntax clear MultipleSearchOrg'
-"
-"    let seq = 0
-"    while seq < 10
-"	bufdo execute 'bufdo syntax clear MultipleSearch' . seq
-"	let seq = seq + 1
-"    endwhile
-"
-"    exe "b " . now_buf
-"endfunction
-
 
 
 "===================================================================================================

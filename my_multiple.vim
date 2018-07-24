@@ -32,13 +32,11 @@ endfunction
 " MultipleSearchInit:
 " ---------------
 function! s:MultipleSearchInit()
-    let BgColorSequence = [ "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
-    let FgColorSequence = [ "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
+    " 1つ目は、hi Search の代替色
+    let BgColorSequence = [ "red",   "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
+    let FgColorSequence = [ "white", "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
 
     let s:MaxColors = len(BgColorSequence)
-
-    " hi Search の代替色
-    hi MultipleSearchOrg guifg=white guibg=red gui=NONE
 
     " Set Highlight
     for i in range(s:MaxColors)
@@ -46,10 +44,8 @@ function! s:MultipleSearchInit()
     endfor
 
     " Init Vars
-    let s:colorToUse = 0
     let g:new_search = 0
     let s:Search_num = 0
-
     let g:Search_Str = []
 
     " Reset Highlight
@@ -64,6 +60,8 @@ function! s:Mymy_Search(word)
 
     if a:word == '' | return '' | endif
 
+    if s:Search_num >= s:MaxColors | return '\|' . a:word | endif
+
     call Mymy_PushPos()
 
     if g:new_search == 0
@@ -71,19 +69,13 @@ function! s:Mymy_Search(word)
 	let s:Search_num = 0
 	let g:Search_Str = []
 
-	silent tabdo windo call matchadd('MultipleSearchOrg', @/, 2, 4 + s:Search_num)
-
+	silent tabdo windo call matchadd('MultipleSearch' . s:Search_num, @/, 2, 4 + s:Search_num)
 	call add(g:Search_Str, @/)
-
-	let s:colorToUse = 0
 	let s:Search_num += 1
     endif
 
-    silent tabdo windo call matchadd('MultipleSearch' . s:colorToUse, a:word, 1, 4 + s:Search_num)
-
+    silent tabdo windo call matchadd('MultipleSearch' . s:Search_num, a:word, 1, 4 + s:Search_num)
     call add(g:Search_Str, a:word)
-
-    let s:colorToUse = (s:colorToUse + 1) % s:MaxColors
     let s:Search_num += 1
 
     call Mymy_PopPos()
@@ -103,7 +95,6 @@ function! DoReset(force)
     silent tabdo windo for i in range(s:Search_num) | call matchdelete(4 + i) | endfor
     call Mymy_PopPos()
 
-    let s:colorToUse = 0
     let g:new_search = 0
 endfunction
 
@@ -113,9 +104,7 @@ function! ReDo()
     let g:new_search = 1
 
     call Mymy_PushPos()
-    silent tabdo windo call matchadd('MultipleSearchOrg', g:Search_Str[0], 2, 4 + 0)
-    "-1と+1はOrgの分
-    silent tabdo windo for i in range(s:Search_num - 1) | call matchadd('MultipleSearch' . (i % s:MaxColors), g:Search_Str[i + 1], 1, 4 + i + 1) | endfor
+    silent tabdo windo for i in range(s:Search_num) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
     call Mymy_PopPos()
 
     return ''

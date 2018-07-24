@@ -1,12 +1,12 @@
-if !has("gui_running")
-    echoerr 'my_multiple suppote GUI only.'
-    finish
-endif
-
 if exists('loaded_my_multiple')
     "finish
 endif
 let loaded_my_multiple = v:true
+
+if !has("gui_running")
+    echoerr 'my_multiple suppote GUI only.'
+    finish
+endif
 
 let g:my_multiple = v:true
 
@@ -17,8 +17,8 @@ let g:my_multiple = v:true
 " MultipleSearchInit:
 " ---------------
 function! s:MultipleSearchInit()
-    let ColorSequence        = [ "blue",  "yellow", "green", "magenta", "cyan",  "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
-    let TextColorSequence    = [ "white", "black",  "black", "white",   "black", "black",   "black",   "black",   "black",   "black"   ]
+    let ColorSequence        = [ "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
+    let TextColorSequence    = [ "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
 
     if len(ColorSequence) != len(TextColorSequence)
 	echoerr 'len(ColorSequence) != len(TextColorSequence)'
@@ -54,64 +54,54 @@ endfunction
 
 
 " ---------------
+" Mymy_PushPos: 
+" ---------------
+function! Mymy_PushPos()
+    let s:now_win = winnr()
+    let s:now_tab = tabpagenr()
+    "PushPos
+endfunction
+
+" ---------------
+" Mymy_PopPos: 
+" ---------------
+function! Mymy_PopPos()
+    exe 'tabnext ' . s:now_tab
+    exe s:now_win . 'wincmd w'
+    "PopPos
+endfunction
+
+" ---------------
 " Mymy_Search: 
 " ---------------
 function! s:Mymy_Search(word)
     if !g:my_multiple | return '' | endif
 
-    let org_search = @/
-    "let @/ = @/ . '\|\<' . a:word . '\>'
+    if a:word == '' | return '' | endif
 
-    call PushPos()
-
-    let now_buf = bufnr("")
+    call Mymy_PushPos()
 
     if g:new_search == 0
 	let s:colorToUse = 0
-	"let g:synstr_org = 'bufdo syntax match MultipleSearchOrg "' . @/ . '" containedin=ALL'
-	let g:synstr_org = 'syntax match MultipleSearchOrg "' . org_search . '" containedin=ALL'
-	while 1
-	    execute g:synstr_org
-	    hi Search	guifg=NONE guibg=NONE gui=NONE
-	    "echo "##" . bufnr("") now_buf
-	    keepjumps bnext
-	    if now_buf == bufnr("") | break | endif
-	endwhile
-	"execute 'syntax match MultipleSearchOrg "' . @/ . '" containedin=ALL'
-	"bufdo hi Search	guifg=NONE guibg=NONE gui=NONE
-	"exe "b " . now_buf
+	let s:Search_num += 1
+	silent tabdo windo call matchadd('MultipleSearchOrg', @/, 2, 3 + s:Search_num)
     endif
-    "exe "b " . now_buf
 
     let g:new_search = 1
-    "echo a:word
+
     let n = <SID>GetNextSequenceNumber()
     let useSearch = "MultipleSearch" . n
 
-    "bufdo execute 'silent syntax clear ' . useSearch
-    "execute 'syntax match ' . a:useSearch . ' "' . a:forwhat . '" containedin=ALL'
-    "let g:synstr[n] = 'bufdo syntax match ' . useSearch . ' "\<' . a:word . '\>" containedin=ALL'
-    let g:synstr[n] = 'syntax keyword ' . useSearch . ' ' . a:word . ''
-    "bufdo execute g:synstr[n]
-    while 1
-	execute 'silent syntax clear ' . useSearch
-	execute g:synstr[n]
-	"echo "$$" . bufnr("") now_buf
-	keepjumps bnext
-	if now_buf == bufnr("") | break | endif
-    endwhile
-    "bufdo call ReDo()
-    "execute 'syntax match ' . useSearch . ' "' . a:word . '" containedin=ALL'
+    let s:Search_num += 1
 
-    exe "b " . now_buf
+    silent tabdo windo call matchadd(useSearch, a:word, 1, 3 + s:Search_num)
 
-    "exe "normal! /\<Up>" . '\|\<' . a:word . '\>'
-    "normal! n
-    call PopPos()
-    return ""
+    call Mymy_PopPos()
+
+    return '\|' . a:word
 endfunction
 
-nnoremap <silent> ! :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
+nnoremap <silent> ! :<Esc>:call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
 
 
 " ---
@@ -141,27 +131,18 @@ function! DoReset(force)
 	return
     endif
 
-    let now_buf = bufnr("")
-    PushPos
+    call Mymy_PushPos()
+    "silent tabdo windo call clearmatches()
 
+    "orgの分をプラス1
+    silent tabdo windo for i in range(s:Search_num) | call matchdelete(3 + i + 1) | endfor
+
+    call Mymy_PopPos()
+
+    let s:colorToUse = 0
+    let s:Search_num = 0
     let g:new_search = 0
-    "? hi Search	guifg=#ffffff guibg=#ff0000 gui=NONE
-    hi	Search	guibg=#c0504d	guifg=white
 
-    while 1
-	execute 'syntax clear MultipleSearchOrg'
-	let seq = 0
-	"while seq < s:Max(s:MaxColors, a:force)
-	while seq < s:MaxColors
-	    execute 'syntax clear MultipleSearch' . seq
-	    let seq = seq + 1
-	endwhile
-	keepjumps bnext
-	if now_buf == bufnr("") | break | endif
-    endwhile
-
-    exe "b " . now_buf
-    PopPos
 endfunction
 
 function! ReDo()
@@ -191,13 +172,14 @@ function! ReDo()
 endfunction
 command! Redo echo ReDo()
 
-
-
-hi Search guibg=#c0504d guifg=white
-
 " Start off with the first color
 let s:colorToUse = 0
 let g:new_search = 0
+let s:Search_num = 0
+
+call Mymy_PushPos()
+silent tabdo windo call clearmatches()
+call Mymy_PopPos()
 
 call <SID>MultipleSearchInit()
 call DoReset(10)

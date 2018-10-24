@@ -1,0 +1,35 @@
+"----------------------------------------------------------------------------------------------
+"let buf_name_t = {}
+"let mod_name_t = {}
+"augroup MyVimrc_StatusLine_Test
+"	au!
+"	au BufAdd         * let buf_name_t["BufAdd"] = bufname('')
+"	au BufNewFile     * let buf_name_t["BufNewFile"] = bufname('')
+"	au BufRead        * let buf_name_t["BufRead"] = bufname('')
+"	au BufFilePost    * let buf_name_t["BufFilePost"] = bufname('')
+"	au BufNew         * let buf_name_t["BufNew"] = bufname('')
+"	au FilterReadPost * let buf_name_t["FilterReadPost"] = bufname('')
+"	au FileReadPost	  * let buf_name_t["FileReadPost"] = bufname('')
+"	au BufEnter       * let buf_name_t["BufEnter"] = bufname('')
+"	au BufWinEnter    * let buf_name_t["BufWinEnter"] = bufname('')
+"
+"	au BufAdd         * let mod_name_t["BufAdd"] = fnamemodify(bufname(''), ':p')
+"	au BufNewFile     * let mod_name_t["BufNewFile"] = fnamemodify(bufname(''), ':p')
+"	au BufRead        * let mod_name_t["BufRead"] = fnamemodify(bufname(''), ':p')
+"	au BufFilePost    * let mod_name_t["BufFilePost"] = fnamemodify(bufname(''), ':p')
+"	au BufNew         * let mod_name_t["BufNew"] = fnamemodify(bufname(''), ':p')
+"	au FilterReadPost * let mod_name_t["FilterReadPost"] = fnamemodify(bufname(''), ':p')
+"	au FileReadPost	  * let mod_name_t["FileReadPost"] = fnamemodify(bufname(''), ':p')
+"	au BufEnter       * let mod_name_t["BufEnter"] = fnamemodify(bufname(''), ':p')
+"	au BufWinEnter    * let mod_name_t["BufWinEnter"] = fnamemodify(bufname(''), ':p')
+"augroup end
+  "au BufEnter * echo strdisplaywidth(bufname(''))
+"----------------------------------------------------------------------------------------------
+"function! Buf_name_len_set()
+"  try
+"    return max([len(fnamemodify(bufname('.'),':p'))+60, 120])
+"  endtry
+"endfunction
+"au BufNewFile,BufRead * let b:buf_name_len = max([len(fnamemodify('.',':p') . bufname('.'))+30, 120])
+"echo max([len(fnamemodify(".", ":p") . bufname(".")) + 40, 120]
+"----------------------------------------------------------------------------------------------

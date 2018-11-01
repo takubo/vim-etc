@@ -13,12 +13,16 @@ function! C_Func_Name(nul_line)
 		normal! k^f(b
 		let func_name = expand("<cword>")
 		echoh hl_func_name
-		echo ' @ ' . func_name . ' ()'
+		"@@ echo ' @ ' . func_name . ' ()'
+		"let stl='%#SLFileName#\ @\ ' . func_name . '\ ()'
+		let stl='%#hl_func_name_stl#\ @\ ' . func_name . '\ ()'
+		exe 'setl stl=' . stl
+		let g:alt_stl_time = 2
 
 		if a:nul_line
 			"空行をprintすることで、'～まで検索～該当箇所は有りません'のエラーとなっても、
 			"関数名が上書きされないようにしている。
-			echo ''
+			"@@ echo ''
 		endif
 
 		echoh None
@@ -53,10 +57,12 @@ hi hl_func_name		guibg=Red	guifg=white	gui=none	ctermfg=202
 hi hl_func_name		guibg=NONE	guifg=#ff5d28	gui=none	ctermfg=202
 hi hl_func_name		guifg=#acf0f2	gui=none	ctermfg=159
 hi hl_func_name		guifg=#cdd129	gui=none	ctermfg=184
+hi hl_func_name_stl	guibg=black guifg=#cdd129	gui=none	ctermfg=184
 
 com! FF call C_Func_Name(v:true)
 
 nnoremap \F :FF<CR>
+nnoremap <C-]> :FF<CR>
 
 augroup C_Func_Name
 	au!

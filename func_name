@@ -1,0 +1,84 @@
+
+function! C_Func_Name(nul_line)
+	let func_name = ''
+
+	PushPos
+
+	normal! [[
+	"? let p1 = line('.')
+	let curline = getline('.')
+	if curline =~ '^{'
+		"? echo "yes1"
+		"normal! k^
+		normal! k^f(b
+		let func_name = expand("<cword>")
+		echoh hl_func_name
+		echo ' @ ' . func_name . ' ()'
+
+		if a:nul_line
+			"空行をprintすることで、'～まで検索～該当箇所は有りません'のエラーとなっても、
+			"関数名が上書きされないようにしている。
+			echo ''
+		endif
+
+		echoh None
+		"? echo getline('.')
+	else
+		" E384のエラーメッセージが出る行を、関数内外で統一するために、空行を出力。
+		echo "\n"
+	endif
+	"? echo p1
+
+	"? ApplyPos
+	"? normal! []
+	"? let p2 = line('.')
+	"? echo p2
+
+	"? ApplyPos
+	"? normal! ]]
+	"? let p3 = line('.')
+	"? echo p3
+
+	"? ApplyPos
+	"? normal! []
+	"? let p4 = line('.')
+	"? echo p4
+
+	PopPos
+
+	return func_name
+endfunction
+
+hi hl_func_name		guibg=Red	guifg=white	gui=none	ctermfg=202
+hi hl_func_name		guibg=NONE	guifg=#ff5d28	gui=none	ctermfg=202
+hi hl_func_name		guifg=#acf0f2	gui=none	ctermfg=159
+hi hl_func_name		guifg=#cdd129	gui=none	ctermfg=184
+
+com! FF call C_Func_Name(v:true)
+
+nnoremap \F :FF<CR>
+
+augroup C_Func_Name
+	au!
+	"au BufEnter *.{c,h} call C_Func_Name(v:true)
+	"WinEnterはfalseにしておかないと、ファイルオープン時に、関数名が表示されてしまい、余分なEnterを推す必要がある。
+	au WinEnter *.{c,h} call C_Func_Name(v:false)
+	au BufLeave *.{c,h} echo ''
+	au WinLeave *.{c,h} echo ''
+augroup end
+
+"nnoremap <silent> n :<C-u>call Mymy_ReDo()<CR>n:FF<CR>
+"nnoremap <silent> N :<C-u>call Mymy_ReDo()<CR>N:FF<CR>
+nnoremap <silent> n n:FF<CR>
+nnoremap <silent> N N:FF<CR>
+
+nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:FF<CR>')
+nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:call feedkeys("FF\<CR>"')
+
+cnoremap <C-r><C-f> <C-R>=C_Func_Name(v:true)<CR>
+cnoremap <C-r>f <C-r><C-f>
+
+
+nnoremap <Ins> [c^:FF<CR>
+nnoremap <Del> ]c^:FF<CR>
+

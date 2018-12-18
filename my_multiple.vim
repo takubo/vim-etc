@@ -102,17 +102,6 @@ command! ReDo echo Mymy_ReDo()
 "nmap <silent> n :<C-u>call Mymy_ReDo()<CR>n
 "nmap <silent> N :<C-u>call Mymy_ReDo()<CR>N
 
-call <SID>MultipleSearchInit()
-
-nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
-nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
-nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
-
-nnoremap & /<C-p>\\|
-"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy_Search("<C-r><C-w>")<CR><CR><CR>
-"nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
-
-
 " 新規Windowを開いたときに、auで色を付けないといけない。
 function! s:set_au_winnew()
   augroup my_multiple
@@ -125,6 +114,17 @@ function! s:unset_au_winnew()
     au!
   augroup end
 endfunction
+
+
+call <SID>MultipleSearchInit()
+
+nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
+nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
+nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
+
+nnoremap & /<C-p>\\|
+"nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy_Search("<C-r><C-w>")<CR><CR><CR>
+"nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
 
 call PushPos_All()

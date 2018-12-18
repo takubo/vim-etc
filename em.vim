@@ -78,19 +78,49 @@ function! s:EmDisp(word)
   let r = s:ana_numstr(a:word, v:false)
 
   if r.base == 16
-    echo '[Dec]' printf("%10u", r.rawstr) '    [Bin]' s:hex2bin(r.numstr) (winwidth(0) > 100 ? '    ' : "\n") '[Byt]' len(r.numstr) / 2 '    [bit]' len(r.numstr) * 4 '    [dig]' len(r.numstr)
+
+    "let dec = printf("%10u", r.rawstr)
+    python3 vim.command('let dec = "' + str(int(vim.eval('r.numstr'), 16)) + '"')
+    let bin = s:hex2bin(r.numstr)
+    let byt = len(r.numstr) / 2
+    let bit = len(r.numstr) * 4
+    let dig = len(r.numstr)
+
+    echo '[Dec]' dec '    [Bin]' bin '' (winwidth(0) > 100 ? '    ' : '\n') '[Byt]' byt '    [bit]' bit '    [dig]' dig
+
     let s:now_disp = 1
+
   elseif r.base == 10
-    let hex = printf("%08x", r.numstr)
-    echo '[Hex] 0x' . hex '    [Bin]' s:hex2bin(hex) '    [byt]' float2nr(ceil(len(hex) / 2.0)) '    [bit]' len(hex) * 4 '    [dig]' len(r.numstr)
+
+    "let hex = printf("%08x", r.numstr)
+    python3 vim.command('let hex = "' + format(int(vim.eval('r.numstr'), 10), '08x') + '"')
+    let bin = s:hex2bin(hex)
+    let byt = float2nr(ceil(len(hex) / 2.0))
+    let bit = len(hex) * 4
+    let dig = len(r.numstr)
+
+    echo '[Hex] 0x' . hex '    [Bin]' bin  '' (winwidth(0) > 100 ? '    ' : '\n') 'byt]' byt '    [bit]' bit '    [dig]' dig
+
     let s:now_disp = 1
+
   elseif r.base == 2
+
     let hex = s:bin2hex(r.numstr)
-    echo '[Hex] 0x' . hex '    [Dec] ' printf("%d", '0x' . hex) '    [byt]' float2nr(ceil(len(r.numstr) / 8.0)) '    [bit]' len(hex) * 4 '    [dig]' len(r.numstr)
+    "let dec = printf("%d", '0x' . hex)
+    python3 vim.command('let dec = "' + str(int(vim.eval('hex'), 16)) + '"')
+    let byt = float2nr(ceil(len(r.numstr) / 8.0))
+    let bit = len(hex) * 4
+    let dig = len(r.numstr)
+
+    echo '[Hex] 0x' . hex '    [Dec] ' dec '    [byt]' byt '    [bit]' bit '    [dig]' dig
+
     let s:now_disp = 1
+
   elseif s:now_disp
+
     echo ""
     let s:now_disp = 0
+
   endif
 endfun
 
@@ -108,4 +138,5 @@ augroup end
 " Test
 " 0xaf45 0xf0 0b011100 0716 1234 65535 0xfdb97531 0xfdb97531ff 256 0b111111110000000011010000  0101111
 " 0xaf45UL 0xf0ll 0b011100 0716 1234 65535 0xfdb97531 256a 0b111111110000000011010000  0101111
-" 98,67878,2345 0b11111111000000001101_0000
+" 98,67878,2345 0b11111111000000001101_0000 0xffffffffffffffff 0xffffffffffffffffffffffffffffffff
+" 993692464862809801080805478547854754953675

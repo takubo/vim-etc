@@ -10,46 +10,25 @@ endif
 
 let g:my_multiple = v:true
 
-" ---------------
-" Mymy_PushPos: 
-" ---------------
-function! Mymy_PushPos()
-    let s:now_win = winnr()
-    let s:now_tab = tabpagenr()
-    "PushPos
-endfunction
-
-" ---------------
-" Mymy_PopPos: 
-" ---------------
-function! Mymy_PopPos()
-    silent exe 'tabnext ' . s:now_tab
-    silent exe s:now_win . 'wincmd w'
-    "PopPos
-endfunction
+" 1つ目は、hi Search の代替色
+let s:BgColorSequence = [ "red",   "blue",  "yellow", "magenta", "green", "cyan",  "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
+let s:FgColorSequence = [ "white", "white", "black",  "white",   "black", "black", "black",   "black",   "black",   "black",   "black"   ]
 
 " ---------------
 " MultipleSearchInit:
 " ---------------
 function! s:MultipleSearchInit()
-    " 1つ目は、hi Search の代替色
-    let BgColorSequence = [ "red",   "blue",  "green", "magenta", "cyan",  "yellow", "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
-    let FgColorSequence = [ "white", "white", "black", "white",   "black", "black",  "black",   "black",   "black",   "black",   "black"   ]
-
-    let s:MaxColors = len(BgColorSequence)
-
     " Set Highlight
-    for i in range(s:MaxColors)
-        execute 'highlight MultipleSearch' . i . ' guifg=' . FgColorSequence[i] . ' guibg=' . BgColorSequence[i]
+    for i in range(len(s:BgColorSequence))
+        execute 'highlight MultipleSearch' . i . ' guifg=' . s:FgColorSequence[i] . ' guibg=' . s:BgColorSequence[i]
     endfor
 
     " Init Vars
     let g:new_search = 0
-    let s:Search_num = 0
     let g:Search_Str = []
 
     " Reset Highlight
-    call DoReset(10)
+    call DoReset(v:true)
 endfunction
 
 " ---------------
@@ -60,56 +39,62 @@ function! s:Mymy_Search(word)
 
     if a:word == '' | return '' | endif
 
-    if s:Search_num >= s:MaxColors | return '\|' . a:word | endif
+    if len(g:Search_Str) >= len(s:BgColorSequence) | return '\|' . a:word | endif
 
-    call Mymy_PushPos()
+    call PushPos_All()
 
     if g:new_search == 0
 	let g:new_search = 1
-	let s:Search_num = 0
 	let g:Search_Str = []
 
-	silent tabdo windo call matchadd('MultipleSearch' . s:Search_num, @/, 2, 4 + s:Search_num)
+	let n = len(g:Search_Str)
+	silent tabdo windo call matchadd('MultipleSearch' . n, @/, 2, 4 + n)
 	call add(g:Search_Str, @/)
-	let s:Search_num += 1
     endif
 
-    silent tabdo windo call matchadd('MultipleSearch' . s:Search_num, a:word, 1, 4 + s:Search_num)
+    let n = len(g:Search_Str)
+    silent tabdo windo call matchadd('MultipleSearch' . n, a:word, 1, 4 + n)
     call add(g:Search_Str, a:word)
-    let s:Search_num += 1
 
-    call Mymy_PopPos()
+    call PopPos_All()
 
     return '\|' . a:word
 endfunction
 
-nnoremap <silent> ! :<Esc>:call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
+nnoremap <silent> ! :<C-u>call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
 
 " ---
 " DoReset: Clear the highlighting
 " ---
 function! DoReset(force)
     if g:new_search == 0 && !a:force | return | endif
-
-    call Mymy_PushPos()
-    silent tabdo windo for i in range(s:Search_num) | call matchdelete(4 + i) | endfor
-    call Mymy_PopPos()
-
     let g:new_search = 0
+
+    call PushPos_All()
+    silent tabdo windo for i in range(len(g:Search_Str)) | call matchdelete(4 + i) | endfor
+    call PopPos_All()
+
+    return
 endfunction
 
-function! ReDo()
+" ---
+" Mymy_ReDo: 
+" ---
+function! Mymy_ReDo()
     if !g:my_multiple | return '' | endif
 
+    if g:new_search == 1 | return | endif
     let g:new_search = 1
 
-    call Mymy_PushPos()
-    silent tabdo windo for i in range(s:Search_num) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
-    call Mymy_PopPos()
+    call PushPos_All()
+    silent tabdo windo for i in range(len(g:Search_Str)) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
+    call PopPos_All()
 
     return ''
 endfunction
-command! Redo echo ReDo()
+command! ReDo echo Mymy_ReDo()
+"nmap <silent> n :<C-u>call Mymy_ReDo()<CR>n
+"nmap <silent> N :<C-u>call Mymy_ReDo()<CR>N
 
 call <SID>MultipleSearchInit()
 
@@ -122,6 +107,10 @@ nnoremap & /<C-p>\\|
 "nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
 
+call PushPos_All()
+silent tabdo windo call clearmatches()
+call PopPos_All()
+
 " TODO
 " 新規Windowを開いたときに、auで色を付けないといけない。
 "
@@ -129,60 +118,26 @@ nnoremap & /<C-p>\\|
 
 "===================================================================================================
 
-
-
-function! C_Func_Name()
-	let fname = ""
-
-	PushPos
-
-	normal! [[
-	let p1 = line('.')
-	let curline = getline('.')
-	if curline =~ '^{'
-		"echo "yes1"
-		"normal! k^
-		normal! k^f(b
-		echo " " . expand("<cword>") . " ()"
-		let fname = expand("<cword>")
-		"echo getline('.')
-	endif
-	"echo p1
-
-	ApplyPos
-	normal! []
-	let p2 = line('.')
-	"echo p2
-
-	ApplyPos
-	normal! ]]
-	let p3 = line('.')
-	"echo p3
-
-	ApplyPos
-	normal! []
-	let p4 = line('.')
-	"echo p4
-
-	PopPos
-
-	return fname
-endfunction
-
-com! FF call C_Func_Name()
-
-nnoremap \F :FF<CR>
-
-augroup C_Func_Name
+highlight HiCurWord guifg=NONE guibg=#444444
+let g:HiCurWord = v:true
+let g:HiCurWord = v:false
+augroup HiCurWord
 	au!
-	au BufEnter *.{c,h} call C_Func_Name()
-	au WinEnter *.{c,h} call C_Func_Name()
+	au CursorMoved *.{c,h} exe g:HiCurWord && match(expand("<cword>"), '\k\+') != -1 ? 'match HiCurWord /\<' . expand("<cword>") . '\>/' : 'match'
 augroup end
-nnoremap <silent> n n:FF<CR>
-nnoremap <silent> N N:FF<CR>
+nnoremap <Leader>@ :<C-u>let g:HiCurWord = !g:HiCurWord<CR>:match<CR>
+
+"===================================================================================================
+
+
+" ここから下は、C Func Name の残滓
+
+so $vim/func_name.vim
+
+nnoremap <silent> n :<C-u>call Mymy_ReDo()<CR>n:FF<CR>
+nnoremap <silent> N :<C-u>call Mymy_ReDo()<CR>N:FF<CR>
+"nnoremap <silent> n n:FF<CR>
+"nnoremap <silent> N N:FF<CR>
 
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:FF<CR>')
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:call feedkeys("FF\<CR>")
-
-cnoremap <C-r><C-f> <C-R>=C_Func_Name()<CR>
-cnoremap <C-r>f <C-r><C-f>

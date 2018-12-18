@@ -58,6 +58,8 @@ function! s:Mymy_Search(word)
 
     call PopPos_All()
 
+    call <SID>set_au_winnew()
+
     return '\|' . a:word
 endfunction
 
@@ -74,6 +76,8 @@ function! DoReset(force)
     silent tabdo windo for i in range(len(g:Search_Str)) | call matchdelete(4 + i) | endfor
     call PopPos_All()
 
+    call <SID>unset_au_winnew()
+
     return
 endfunction
 
@@ -89,6 +93,8 @@ function! Mymy_ReDo()
     call PushPos_All()
     silent tabdo windo for i in range(len(g:Search_Str)) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
     call PopPos_All()
+
+    call <SID>set_au_winnew()
 
     return ''
 endfunction
@@ -107,13 +113,25 @@ nnoremap & /<C-p>\\|
 "nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
 
+" 新規Windowを開いたときに、auで色を付けないといけない。
+function! s:set_au_winnew()
+  augroup my_multiple
+    au WinNew * for i in range(len(g:Search_Str)) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
+  augroup end
+endfunction
+
+function! s:unset_au_winnew()
+  augroup my_multiple
+    au!
+  augroup end
+endfunction
+
+
 call PushPos_All()
 silent tabdo windo call clearmatches()
 call PopPos_All()
 
-" TODO
-" 新規Windowを開いたときに、auで色を付けないといけない。
-"
+call <SID>unset_au_winnew()
 
 
 "===================================================================================================

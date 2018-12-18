@@ -14,6 +14,13 @@ let g:my_multiple = v:true
 let s:BgColorSequence = [ "red",   "blue",  "yellow", "magenta", "green", "cyan",  "#ee8822", "#22ee88", "#8822ee", "#ee2288", "#2288ee" ]
 let s:FgColorSequence = [ "white", "white", "black",  "white",   "black", "black", "black",   "black",   "black",   "black",   "black"   ]
 
+
+" g:new_search
+"    0:初期値、multipleは未実施。または、/や*で再検索されリセットされた状態。
+"    1:multipleによるハイライト中
+"    2:EscEscでハイライトが中断された状態
+
+
 " ---------------
 " MultipleSearchInit:
 " ---------------
@@ -28,7 +35,13 @@ function! s:MultipleSearchInit()
     let g:Search_Str = []
 
     " Reset Highlight
-    call DoReset(v:true)
+    "call DoReset(v:true)
+
+    call PushPos_All()
+    silent tabdo windo call clearmatches()
+    call PopPos_All()
+
+    call <SID>unset_au_winnew()
 endfunction
 
 " ---------------
@@ -43,7 +56,7 @@ function! s:Mymy_Search(word)
 
     call PushPos_All()
 
-    if g:new_search == 0
+    if g:new_search != 1
 	let g:new_search = 1
 	let g:Search_Str = []
 
@@ -63,14 +76,12 @@ function! s:Mymy_Search(word)
     return '\|' . a:word
 endfunction
 
-nnoremap <silent> ! :<C-u>call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
-
 " ---
 " DoReset: Clear the highlighting
 " ---
-function! DoReset(force)
-    if g:new_search == 0 && !a:force | return | endif
-    let g:new_search = 0
+function! DoReset(next_mode, force)
+    if g:new_search != 1 && !a:force | return | endif
+    let g:new_search = a:next_mode
 
     call PushPos_All()
     silent tabdo windo for i in range(len(g:Search_Str)) | call matchdelete(4 + i) | endfor
@@ -82,12 +93,12 @@ function! DoReset(force)
 endfunction
 
 " ---
-" Mymy_ReDo: 
+" Mymy_ReDo:
 " ---
-function! Mymy_ReDo()
+function! Mymy_ReDo(force)
     if !g:my_multiple | return '' | endif
+    if g:new_search != 2 && !a:force | return | endif
 
-    if g:new_search == 1 | return | endif
     let g:new_search = 1
 
     call PushPos_All()
@@ -98,9 +109,6 @@ function! Mymy_ReDo()
 
     return ''
 endfunction
-command! ReDo echo Mymy_ReDo()
-"nmap <silent> n :<C-u>call Mymy_ReDo()<CR>n
-"nmap <silent> N :<C-u>call Mymy_ReDo()<CR>N
 
 " 新規Windowを開いたときに、auで色を付けないといけない。
 function! s:set_au_winnew()
@@ -118,20 +126,25 @@ endfunction
 
 call <SID>MultipleSearchInit()
 
-nnoremap <silent> * <Esc>:call DoReset(0)<CR>*
-nnoremap <silent> # <Esc>:call DoReset(0)<CR>g*
-nnoremap <silent> <Esc><Esc> <Esc>:noh<CR>:call clever_f#reset()<CR>:call DoReset(0)<CR>
+call Esc_Add('call DoReset(2, 0)')
+
+
+so $vim/func_name.vim
+
+
+nnoremap <silent> * <Esc>:call DoReset(0, 0)<CR>*
+nnoremap <silent> # <Esc>:call DoReset(0, 0)<CR>g*
+
+cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:call DoReset(0, 0)<CR>:FF2<CR>' ) : ( '<CR>' )
+
+nnoremap <silent> ! :<C-u>call <SID>Mymy_Search('\<' . "<C-r><C-w>" . '\>')<CR>/<C-p>\\|\<<C-r><C-w>\><CR>
 
 nnoremap & /<C-p>\\|
 "nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy_Search("<C-r><C-w>")<CR><CR><CR>
 "nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
-
-call PushPos_All()
-silent tabdo windo call clearmatches()
-call PopPos_All()
-
-call <SID>unset_au_winnew()
+nnoremap <silent> n :<C-u>call Mymy_ReDo(v:false)<CR>n:FF2<CR>
+nnoremap <silent> N :<C-u>call Mymy_ReDo(v:false)<CR>N:FF2<CR>
 
 
 "===================================================================================================
@@ -148,14 +161,5 @@ nnoremap <Leader>@ :<C-u>let g:HiCurWord = !g:HiCurWord<CR>:match<CR>
 "===================================================================================================
 
 
-" ここから下は、C Func Name の残滓
-
-so $vim/func_name.vim
-
-nnoremap <silent> n :<C-u>call Mymy_ReDo()<CR>n:FF<CR>
-nnoremap <silent> N :<C-u>call Mymy_ReDo()<CR>N:FF<CR>
-"nnoremap <silent> n n:FF<CR>
-"nnoremap <silent> N N:FF<CR>
-
-nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:FF<CR>')
-nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:call feedkeys("FF\<CR>")
+" デバッグ
+command! ReDo echo Mymy_ReDo(v:true)

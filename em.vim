@@ -1,4 +1,6 @@
-let c99 = v:true
+let s:c99 = v:true
+let s:octal = v:false
+let s:extend_bin = v:true
 
 let s:b2h = { '0000' : '0', '0001' : '1', '0010' : '2', '0011' : '3', '0100' : '4', '0101' : '5', '0110' : '6', '0111' : '7',
             \ '1000' : '8', '1001' : '9', '1010' : 'a', '1011' : 'b', '1100' : 'c', '1101' : 'd', '1110' : 'e', '1111' : 'f' }
@@ -8,7 +10,7 @@ let s:h2b = { '0' : 'oooo', '1' : 'oooI', '2' : 'ooIo', '3' : 'ooII', '4' : 'oIo
 
 let s:now_disp = 0
 
-function! s:ana_numstr(word, expand)
+function! s:ana_numstr(word, extend)
   let rawstr = a:word
   let numstr = ''
   let base = 0
@@ -19,23 +21,22 @@ function! s:ana_numstr(word, expand)
   elseif rawstr =~? '^\([1-9]\d*\|0\+\)[lLuU]\{,3\}$'	" 0のみから構成される数は、Cの仕様上、厳密には8進であるが、便宜上10進として扱う。
     let base = 10
     let numstr = substitute(rawstr, '[ulUL]\+', '', '')
-  elseif rawstr =~? '^0\o\+$'
+  elseif s:octal && rawstr =~? '^0\o\+$'
     let base = 8
     let numstr = rawstr
-  elseif rawstr =~? '^0b[01]\+$'	" 2進リテラル C99
+  elseif rawstr =~? '^0b[01]\+$'  " 2進リテラル(C99)
     let base = 2
     let numstr = strpart(rawstr, 2)
+  elseif s:extend_bin && rawstr =~? '^\(0b\)\?[_01]\{3,\}$'  " Cの接頭辞がない2進数 および 桁区切りにアンダースコアを使う2進数
+      let base = 2
+      let numstr = substitute(rawstr, '^0b\|_', '', 'g')
   endif
 
-  if a:expand && base == 0
+  if a:extend && base == 0
     " Cの接頭辞がない16進数
     if rawstr =~? '^\x\+$'
       let base = 16
       let numstr = rawstr
-    " 桁区切りにアンダースコアを使う2進数
-    elseif rawstr =~? '^\(0b\)\?[_01]\{3,\}$'
-      let base = 2
-      let numstr = substitute(rawstr, '^0b\|_', '', 'g')
     " 桁区切りにカンマを使う10進数
     elseif rawstr =~? '^\([0-9,]\+\)$'
       let base = 10

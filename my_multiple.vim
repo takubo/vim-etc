@@ -63,6 +63,8 @@ function! s:Mymy_Search(word)
 	let n = len(g:Search_Str)
 	silent tabdo windo call matchadd('MultipleSearch' . n, @/, 2, 4 + n)
 	call add(g:Search_Str, @/)
+
+	call <SID>set_au_winnew()
     endif
 
     let n = len(g:Search_Str)
@@ -71,7 +73,7 @@ function! s:Mymy_Search(word)
 
     call PopPos_All()
 
-    call <SID>set_au_winnew()
+    "call <SID>set_au_winnew()
 
     return '\|' . a:word
 endfunction
@@ -113,6 +115,7 @@ endfunction
 " 新規Windowを開いたときに、auで色を付けないといけない。
 function! s:set_au_winnew()
   augroup my_multiple
+    "au!
     au WinNew * for i in range(len(g:Search_Str)) | call matchadd('MultipleSearch' . i, g:Search_Str[i], 1, 4 + i) | endfor
   augroup end
 endfunction
@@ -143,8 +146,8 @@ nnoremap & /<C-p>\\|
 "nnoremap & /<C-p>\\|\<<C-r><C-w>\><C-r>=<SID>Mymy_Search("<C-r><C-w>")<CR><CR><CR>
 "nnoremap & :<Esc>:call <SID>Mymy_Search("<C-r><C-w>")<CR>
 
-nnoremap <silent> n :<C-u>call Mymy_ReDo(v:false)<CR>n:FF2<CR>
-nnoremap <silent> N :<C-u>call Mymy_ReDo(v:false)<CR>N:FF2<CR>
+nnoremap <expr> <silent> n g:new_search == 2 ? ':<C-u>call Mymy_ReDo(v:false)<CR>' : '' . 'n:FF2<CR>'
+nnoremap <expr> <silent> N g:new_search == 2 ? ':<C-u>call Mymy_ReDo(v:false)<CR>' : '' . 'N:FF2<CR>'
 
 
 "===================================================================================================

@@ -1,5 +1,5 @@
 
-function! C_Func_Name(nul_line)
+function! C_Func_Name(alt_stl_time, nul_line)
 	let func_name = ''
 
 	PushPos
@@ -15,9 +15,14 @@ function! C_Func_Name(nul_line)
 		echoh hl_func_name
 		"@@ echo ' @ ' . func_name . ' ()'
 		"let stl='%#SLFileName#\ @\ ' . func_name . '\ ()'
-		let stl='%#hl_func_name_stl#\ @\ ' . func_name . '\ ()'
+		"let stl='%#hl_func_name_stl#\ @\ \ ' . func_name . '\ ()'
+		"let stl='%#SLFileName#\ @\ \ ' . func_name . '\ (\ )' . '\ \ \ %##'
+		"let stl='\ \ \ \ %#hl_func_name_stl2#\ @\ \ ' . func_name . '\ (\ )' . '\ \ \ %##'
+		"let stl='\ \ \ \ %#hl_func_name_stl#\ @\ \ ' . func_name . '\ (\ )' . '\ \ \ %##'
+		"let stl='\ \ \ \ %#hl_func_name_stl#\ @\ \ ' . func_name . '\ ' . '\ \ \ %##'
+		let stl='\ \ \ \ %#hl_func_name_stl#\ \ \ ' . func_name . '\ ' . '\ \ \ %##'
 		exe 'setl stl=' . stl
-		let g:alt_stl_time = 2
+		let g:alt_stl_time = a:alt_stl_time
 
 		if a:nul_line
 			"空行をprintすることで、'～まで検索～該当箇所は有りません'のエラーとなっても、
@@ -28,6 +33,8 @@ function! C_Func_Name(nul_line)
 		echoh None
 		"? echo getline('.')
 	else
+		" 消さないと、前回の関数名が残ってしまう。
+		setl stl=
 		" E384のエラーメッセージが出る行を、関数内外で統一するために、空行を出力。
 		echo "\n"
 	endif
@@ -53,38 +60,54 @@ function! C_Func_Name(nul_line)
 	return func_name
 endfunction
 
-hi hl_func_name		guibg=Red	guifg=white	gui=none	ctermfg=202
-hi hl_func_name		guibg=NONE	guifg=#ff5d28	gui=none	ctermfg=202
-hi hl_func_name		guifg=#acf0f2	gui=none	ctermfg=159
-hi hl_func_name		guifg=#cdd129	gui=none	ctermfg=184
-hi hl_func_name_stl	guibg=black guifg=#cdd129	gui=none	ctermfg=184
+"hi hl_func_name		guibg=Red	guifg=white	gui=none	ctermfg=202
+"hi hl_func_name		guibg=NONE	guifg=#ff5d28	gui=none	ctermfg=202
+"hi hl_func_name		guifg=#acf0f2	gui=none	ctermfg=159
+"hi hl_func_name		guifg=#cdd129	gui=none	ctermfg=184
+"hi hl_func_name_stl	guibg=black guifg=#cdd129	gui=none	ctermfg=184
+"hi hl_func_name_stl2	guibg=black guifg=#cdcdcd	gui=none	ctermfg=184
 
-com! FF call C_Func_Name(v:true)
+com! FF call C_Func_Name(2, v:true)
+com! FF2 call C_Func_Name(5, v:true)
 
-nnoremap \F :FF<CR>
-nnoremap <C-]> :FF<CR>
+nnoremap <silent> <Leader>F :FF2<CR>
+nnoremap <silent> , :FF2<CR>
+nnoremap <silent> <C-]> :FF<CR>
 
 augroup C_Func_Name
 	au!
-	"au BufEnter *.{c,h} call C_Func_Name(v:true)
-	"WinEnterはfalseにしておかないと、ファイルオープン時に、関数名が表示されてしまい、余分なEnterを推す必要がある。
-	au WinEnter *.{c,h} call C_Func_Name(v:false)
+	"au BufEnter *.{c,h} call C_Func_Name(2, v:true)
+	"WinEnterでは、第2引数をfalseにしておかないと、
+	"ファイルオープン時に、関数名が表示されてしまい、余分なEnterを推す必要がある。
+	"au WinEnter *.{c,h} call C_Func_Name(2, v:false)
 	au BufLeave *.{c,h} echo ''
 	au WinLeave *.{c,h} echo ''
+	au WinLeave *.{c,h} setl stl=
 augroup end
 
 "nnoremap <silent> n :<C-u>call Mymy_ReDo()<CR>n:FF<CR>
 "nnoremap <silent> N :<C-u>call Mymy_ReDo()<CR>N:FF<CR>
-nnoremap <silent> n n:FF<CR>
-nnoremap <silent> N N:FF<CR>
+" echoは、「これ以上ありません。」的なエラーメッセージを消すため。
+"nnoremap <silent> n :<C-u>echo ''<CR>n:FF2<CR>
+"nnoremap <silent> N :<C-u>echo ''<CR>N:FF2<CR>
+nnoremap <silent> <Plug>(FFn) :<C-u>FF2<CR>
+nmap  n n<Plug>(FFn)
+nmap  N N<Plug>(FFn)
+nmap <expr> *  ( (match(expand("<cword>"), '_') == 0) ? ('/\<_\?' . substitute(expand("<cword>"), '^_', '', '') . '\><CR>') : ('/\<_\?<C-r><C-w>\><CR>') ) . '<Plug>(FFn)'
+nmap <expr> #  ( (match(expand("<cword>"), '_') == 0) ? ('/_\?' . substitute(expand("<cword>"), '^_', '', '') . '<CR>') : ('/_\?<C-r><C-w><CR>') ) . '<Plug>(FFn)'
+cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FF2<CR>' ) : ( '<CR>' )
+
+nnoremap <silent> ][ ][:FF2<CR>
+nnoremap <silent> [] []:FF2<CR>
 
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:FF<CR>')
 nnoremap <expr> <C-w><CR> (&ft != 'qf') ? ('<C-w><C-]>z<CR>' . (winheight(0)/4) . '<C-y>') : ('<CR>:call feedkeys("FF\<CR>"')
 
-cnoremap <C-r><C-f> <C-R>=C_Func_Name(v:true)<CR>
+cnoremap <C-r><C-f> <C-R>=C_Func_Name(0, v:true)<CR>
 cnoremap <C-r>f <C-r><C-f>
 
+nnoremap <silent> <Ins> [c^:FF2<CR>
+nnoremap <silent> <Del> ]c^:FF2<CR>
 
-nnoremap <Ins> [c^:FF<CR>
-nnoremap <Del> ]c^:FF<CR>
-
+"nmap <silent> n n:FF2<CR>
+"nmap <silent> N N:FF2<CR>

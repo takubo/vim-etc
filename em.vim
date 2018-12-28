@@ -1,3 +1,5 @@
+" vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
+
 let s:c99 = v:true
 let s:octal = v:false
 let s:extend_bin = v:true
@@ -5,8 +7,11 @@ let s:extend_bin = v:true
 let s:b2h = { '0000' : '0', '0001' : '1', '0010' : '2', '0011' : '3', '0100' : '4', '0101' : '5', '0110' : '6', '0111' : '7',
             \ '1000' : '8', '1001' : '9', '1010' : 'a', '1011' : 'b', '1100' : 'c', '1101' : 'd', '1110' : 'e', '1111' : 'f' }
 
-let s:h2b = { '0' : 'oooo', '1' : 'oooI', '2' : 'ooIo', '3' : 'ooII', '4' : 'oIoo', '5' : 'oIoI', '6' : 'oIIo', '7' : 'oIII',
-            \ '8' : 'Iooo', '9' : 'IooI', 'a' : 'IoIo', 'b' : 'IoII', 'c' : 'IIoo', 'd' : 'IIoI', 'e' : 'IIIo', 'f' : 'IIII' }
+let s:h2b_dsip = { '0' : 'oooo', '1' : 'oooI', '2' : 'ooIo', '3' : 'ooII', '4' : 'oIoo', '5' : 'oIoI', '6' : 'oIIo', '7' : 'oIII',
+                 \ '8' : 'Iooo', '9' : 'IooI', 'a' : 'IoIo', 'b' : 'IoII', 'c' : 'IIoo', 'd' : 'IIoI', 'e' : 'IIIo', 'f' : 'IIII' }
+
+let s:h2b_norm = { '0' : '0000', '1' : '0001', '2' : '0010', '3' : '0011', '4' : '0100', '5' : '0101', '6' : '0110', '7' : '0111',
+                 \ '8' : '1000', '9' : '1001', 'a' : '1010', 'b' : '1011', 'c' : '1100', 'd' : '1101', 'e' : '1110', 'f' : '1111' }
 
 let s:now_disp = 0
 
@@ -64,11 +69,12 @@ function! s:bin2hex(bin)
   return hex
 endfunc
 
-function! s:hex2bin(hex)
+function! s:hex2bin(hex, disp)
   let bin = ''
+  let h2b = a:disp ? s:h2b_dsip : s:h2b_norm
 
   for i in split(a:hex, '\zs')
-    let bin = bin . s:h2b[tolower(i)] . ' '
+    let bin .= h2b[tolower(i)] . ' '
   endfor
 
   return bin
@@ -77,29 +83,38 @@ endfunc
 function! s:EmDisp(word)
   let r = s:ana_numstr(a:word, v:false)
 
+  let dig = len(r.numstr)
+
   if r.base == 16
 
     "let dec = printf("%10u", r.rawstr)
     python3 vim.command('let dec = "' + str(int(vim.eval('r.numstr'), 16)) + '"')
-    let bin = s:hex2bin(r.numstr)
+    let bin = s:hex2bin(r.numstr, v:true)
     let byt = len(r.numstr) / 2
-    let bit = len(r.numstr) * 4
-    let dig = len(r.numstr)
+    let bit = len(substitute(bin, '^[ o]\+\| ', '', 'g'))
 
-    echo '[Dec]' dec '    [Bin]' bin '' (winwidth(0) > 100 ? '    ' : '\n') '[Byt]' byt '    [bit]' bit '    [dig]' dig
+    echo ' [Dec]' dec '    [Bin]' bin '' (winwidth(0) > 100 ? '    ' : '\n') '[Byt]' byt '    [Bit]' bit '    [Dig]' dig
 
     let s:now_disp = 1
 
   elseif r.base == 10
 
     "let hex = printf("%08x", r.numstr)
-    python3 vim.command('let hex = "' + format(int(vim.eval('r.numstr'), 10), '08x') + '"')
-    let bin = s:hex2bin(hex)
-    let byt = float2nr(ceil(len(hex) / 2.0))
-    let bit = len(hex) * 4
-    let dig = len(r.numstr)
+    "python3 vim.command('let hex = "' + format(int(vim.eval('r.numstr'), 10), '08x') + '"')
 
-    echo '[Hex] 0x' . hex '    [Bin]' bin  '' (winwidth(0) > 100 ? '    ' : '\n') 'byt]' byt '    [bit]' bit '    [dig]' dig
+    python3 vim.command('let hex = "' + format(int(vim.eval('r.numstr'), 10), 'x') + '"')
+    let hex_len = len(hex)
+    let hex = hex_len == 1 ? '0' . hex :
+	    \ hex_len == 3 ? '0' . hex :
+	    \ hex_len > 4 && hex_len <  8 ? matchstr('000' . hex, '.\{8\}$') :
+	    \ hex_len > 8 && hex_len < 16 ? matchstr('0000000' . hex, '.\{16\}$') :
+	    \ hex
+
+    let bin = s:hex2bin(hex, v:true)
+    let byt = float2nr(ceil(len(hex) / 2.0))  " TODO
+    let bit = len(substitute(bin, '^[ o]\+\| ', '', 'g'))
+
+    echo ' [Hex] 0x' . hex '    [Bin]' bin  '' (winwidth(0) > 100 ? '    ' : '\n') '[byt]' byt '    [Bit]' bit '    [Dig]' dig
 
     let s:now_disp = 1
 
@@ -109,10 +124,9 @@ function! s:EmDisp(word)
     "let dec = printf("%d", '0x' . hex)
     python3 vim.command('let dec = "' + str(int(vim.eval('hex'), 16)) + '"')
     let byt = float2nr(ceil(len(r.numstr) / 8.0))
-    let bit = len(hex) * 4
-    let dig = len(r.numstr)
+    let bit = len(substitute(r.numstr, '^0\+', '', ''))
 
-    echo '[Hex] 0x' . hex '    [Dec] ' dec '    [byt]' byt '    [bit]' bit '    [dig]' dig
+    echo ' [Hex] 0x' . hex '    [Dec] ' dec '    [byt]' byt '    [Bit]' bit '    [Dig]' dig
 
     let s:now_disp = 1
 
@@ -137,6 +151,6 @@ augroup end
 
 " Test
 " 0xaf45 0xf0 0b011100 0716 1234 65535 0xfdb97531 0xfdb97531ff 256 0b111111110000000011010000  0101111
-" 0xaf45UL 0xf0ll 0b011100 0716 1234 65535 0xfdb97531 256a 0b111111110000000011010000  0101111
-" 98,67878,2345 0b11111111000000001101_0000 0xffffffffffffffff 0xffffffffffffffffffffffffffffffff
-" 993692464862809801080805478547854754953675
+" 0xaf45UL 0xf0ll 0b011100 0716 1234 65536 0xfdb97531 256a 0b111111110000000011010000  0101111
+" 98,67878,2345 0b01011111000000001101_0000 0xffffffffffffffff 0xffffffffffffffffffffffffffffffff
+" 993692464862809801080805478547854754953675 3 165535 18446744073709551606

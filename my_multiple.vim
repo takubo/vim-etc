@@ -5,7 +5,7 @@ let loaded_my_multiple = v:true
 
 if !has("gui_running")
     echoerr 'my_multiple suppote GUI only.'
-    finish
+    "finish
 endif
 
 let g:my_multiple = v:true
@@ -129,10 +129,10 @@ endfunction
 
 call <SID>MultipleSearchInit()
 
-call Esc_Add('call DoReset(2, 0)')
+call EscEsc_Add('call DoReset(2, 0)')
 
 
-so $vim/func_name.vim
+"so $vim/func_name.vim
 
 
 nnoremap <silent> * <Esc>:call DoReset(0, 0)<CR>*
@@ -166,3 +166,4 @@ nnoremap <Leader>@ :<C-u>let g:HiCurWord = !g:HiCurWord<CR>:match<CR>
 
 " デバッグ
 command! ReDo echo Mymy_ReDo(v:true)
+

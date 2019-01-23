@@ -1,0 +1,20 @@
+scriptencoding utf-8
+" vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
+
+so $vim/mycfi.vim
+
+let g:anzu_status_format = '/%p ( %i / %l )'
+let g:anzu_search_limit = 999
+
+" mapping
+nmap n <Plug>(anzu-n-with-echo)<Plug>(FFn)
+nmap N <Plug>(anzu-N-with-echo)<Plug>(FFn)
+nmap * <Plug>(anzu-star-with-echo)<Plug>(FFn)
+nmap # <Plug>(anzu-sharp-with-echo)<Plug>(FFn)
+" clear status
+"nmap <Esc><Esc> <Plug>(anzu-clear-search-status)
+" statusline
+"set statusline=%{anzu#search_status()}
+
+
+cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )

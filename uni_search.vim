@@ -67,6 +67,12 @@ com! TestWord call Search_Word(expand('<cword>'), v:true, v:true)
 
 
 function! Search_CWord(new, aword)
+  " 最後のヒットだったときにエラーになる。
+  "try
+  "  normal! *
+  "catch
+  "endtry
+
   let search_srt = TBD2()
 
   if a:aword
@@ -81,8 +87,15 @@ function! Search_CWord(new, aword)
 
   "call MultiHighLight(search_srt)
 
-  call feedkeys(":set hlsearch\<CR>", 'n')
-  "normal n
+  "検索履歴に残すための処理
+  exe 'normal! /' . @/
+
+  "call feedkeys(":set hlsearch\<CR>", 'n')
+  try
+    normal n
+  catch
+  endtry
+
   AnzuUpdateSearchStatusOutput
   FuncNameStl
 endfunction
@@ -102,7 +115,7 @@ com! MySearchCWordNewPart call Search_CWord(g:MySearch_Word_New, g:MySearch_Word
 com! MySearchCWordAddFull call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull) | set hlsearch
 com! MySearchCWordAddPart call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart) | set hlsearch
 
-nnoremap * :<C-u>MySearchCWordNewFull<CR>
-nnoremap # :<C-u>MySearchCWordNewPart<CR>
-nnoremap ! :<C-u>MySearchCWordAddFull<CR>
-nnoremap & :<C-u>MySearchCWordAddPart<CR>
+nnoremap <silent> * :<C-u>MySearchCWordNewFull<CR>
+nnoremap <silent> # :<C-u>MySearchCWordNewPart<CR>
+nnoremap <silent> ! :<C-u>MySearchCWordAddFull<CR>
+nnoremap <silent> & :<C-u>MySearchCWordAddPart<CR>

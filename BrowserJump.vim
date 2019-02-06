@@ -10,7 +10,7 @@ call PushPos_All() | exe 'tabdo windo call s:init_win()' | call PopPos_All()
 
 function! s:init_win()
   let w:BrowserJumpList = []
-  let w:BrowserJumpNowIndex -= 1
+  let w:BrowserJumpNowIndex = -1
 endfunction
 
 
@@ -38,9 +38,13 @@ endfunction
 function! s:update_jumplist()
   let new_jump_list = CmdOutLine('jumps')[1:-2]
   silent clearjumps
+  "echo len(new_jump_list) new_jump_list
   if new_jump_list != []
+    if w:BrowserJumpNowIndex < (len(w:BrowserJumpList) - 1)
+      call remove(w:BrowserJumpList, w:BrowserJumpNowIndex + 1, -1)
+    endif
     let w:BrowserJumpList += new_jump_list
-    let w:BrowserJumpNowIndex = len(w:BrowserJumpList) - 1
+    let w:BrowserJumpNowIndex = len(w:BrowserJumpList)
     return v:true
   endif
   return v:false
@@ -59,3 +63,6 @@ endfunction
 nnoremap <silent> H :<C-u>call BrowserJump_Back()<CR>
 nnoremap <silent> L :<C-u>call BrowserJump_Foward()<CR>
 nnoremap <silent> <Leader>H :<C-u>call BrowserJump_Disp()<CR>
+
+" バッファが変わると、cell[3:]が効かない
+" 変更後、ちゃんと戻らない。

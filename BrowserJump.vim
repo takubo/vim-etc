@@ -1,53 +1,18 @@
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
 
-" Commnad Output Capture {{{
 
-command!
-      \ -nargs=+ -bang
-      \ -complete=command
-      \ CmdOutCapture
-      \ call s:cmd_out_capture([<f-args>], <bang>0)
-
-function! s:cmd_out_capture(args, banged)
-  new
-  silent put =CmdOut(join(a:args))
-  1,2delete _
-endfunction
-
-command!
-      \ -nargs=+ -bang
-      \ -complete=command
-      \ CmdOutYank
-      \ call s:cmd_out_yank([<f-args>], <bang>0)
-
-function! s:cmd_out_yank(args, banged)
-  silent let @* = CmdOut(join(a:args))
-endfunction
-
-function! CmdOut(cmd)
-  redir => result
-  silent execute a:cmd
-  redir END
-  return result
-endfunction
-
-function! CmdOutLine(args)
-  return split(CmdOut(a:args), '\n')
-endfunction
-
-" }}}
-
-
-
-
-
-
+augroup BrowserJump
+  au!
+  au WinNew * call s:init_win()
+augroup end
+call PushPos_All() | exe 'tabdo call s:init_win()' | call PopPos_All()
 
 function! s:init_win()
   let w:BrowserJumpNowIndex = -1
   let w:BrowserJumpList = []
 endfunction
+
 
 function! s:jump(i)
   let cell = split(w:BrowserJumpList[a:i])
@@ -83,6 +48,7 @@ function! BrowserJump_Foward()
   endif
 endfunction
 
+
 function! BrowserJump_Disp()
   call s:add_jumplist()
   for i in w:BrowserJumpList
@@ -90,11 +56,6 @@ function! BrowserJump_Disp()
   endfor
 endfunction
 
-augroup BrowserJump
-  au!
-  au WinNew * call s:init_win()
-augroup end
-call PushPos_All() | exe 'tabdo call s:init_win()' | call PopPos_All()
 
 nnoremap H :<C-u>call BrowserJump_Back()<CR>
 nnoremap L :<C-u>call BrowserJump_Foward()<CR>

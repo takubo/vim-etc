@@ -40,7 +40,7 @@ function! s:update_jumplist()
   silent clearjumps
   if new_jump_list != []
     let w:BrowserJumpList += new_jump_list
-    let w:BrowserJumpNowIndex = len(w:BrowserJumpList)
+    let w:BrowserJumpNowIndex = len(w:BrowserJumpList) - 1
     return v:true
   endif
   return v:false
@@ -49,12 +49,13 @@ endfunction
 
 function! BrowserJump_Disp()
   call s:update_jumplist()
-  for i in w:BrowserJumpList
-    echo w:BrowserJumpNowIndex i
+  for i in range(0, len(w:BrowserJumpList) - 1)
+    echo printf('%3d ', i) (w:BrowserJumpNowIndex == i ? '>' : ' ') w:BrowserJumpList[i]
   endfor
+  "echo w:BrowserJumpNowIndex
 endfunction
 
 
-nnoremap H :<C-u>call BrowserJump_Back()<CR>
-nnoremap L :<C-u>call BrowserJump_Foward()<CR>
-nnoremap <Leader>H :<C-u>call BrowserJump_Disp()<CR>
+nnoremap <silent> H :<C-u>call BrowserJump_Back()<CR>
+nnoremap <silent> L :<C-u>call BrowserJump_Foward()<CR>
+nnoremap <silent> <Leader>H :<C-u>call BrowserJump_Disp()<CR>

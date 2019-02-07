@@ -56,12 +56,11 @@ endfunction
 
 
 function! BrowserJump_Disp()
-  let top = s:update_jumplist()
-  let w:BrowserTop = (w:BrowserTop || top)
+  let w:BrowserTop = (w:BrowserTop || s:update_jumplist())
   for i in range(0, len(w:BrowserJumpList) - 1)
-    echo printf('%3d ', i) (w:BrowserJumpNowIndex == i ? top ? '?' : '>' : ' ') w:BrowserJumpList[i]
+    echo printf('%3d ', i) (w:BrowserJumpNowIndex == i ? w:BrowserTop ? '?' : '>' : ' ') w:BrowserJumpList[i]
   endfor
-  echo ' ' w:BrowserJumpNowIndex
+  echo ' ' ((w:BrowserJumpNowIndex < 0 || len(w:BrowserJumpList) <= w:BrowserJumpNowIndex) ? w:BrowserJumpNowIndex : '')
 endfunction
 
 

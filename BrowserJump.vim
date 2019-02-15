@@ -25,6 +25,11 @@ endfunction
 
 function! BrowserJump_Foward()
   if w:BrowserJumpNowIndex < (len(w:BrowserJumpList) - 1)
+    " 現在位置に戻って来れるように更新
+    let ind = w:BrowserJumpNowIndex
+    let w:BrowserJumpList[ind]['row'] = line('.')
+    let w:BrowserJumpList[ind]['col'] = col('.')
+
     let w:BrowserJumpNowIndex += 1
     call s:jump(w:BrowserJumpNowIndex)
   endif
@@ -32,10 +37,15 @@ endfunction
 
 
 function! s:jump(n)
-  let cell = split(w:BrowserJumpList[a:n]['org'])
   silent exe 'buffer ' . w:BrowserJumpList[a:n]['buf_nr']
-  " jumspで取得できる桁はなぜか、1小さいので+1する。
-  call setpos('.', [0, cell[1], cell[2] + 1, 0])
+  if 1
+    " jumspで取得できる桁はなぜか、1小さいので+1する。
+    call setpos('.', [0, w:BrowserJumpList[a:n]['row'], w:BrowserJumpList[a:n]['col'], 0])
+  else
+    " jumspで取得できる桁はなぜか、1小さいので+1する。
+    let cell = split(w:BrowserJumpList[a:n]['org'])
+    call setpos('.', [0, cell[1], cell[2] + 1, 0])
+  endif
   clearjumps
 endfunction
 
@@ -56,7 +66,7 @@ function! s:update_jumplist()
       let bname = join(cell[3:])
       let bn = bufnr(bname)
       let bn = bn >= 0 ? bn : bufnr('%')
-      let w:BrowserJumpList += [{ 'org' : li, 'buf_nr' : bn }]
+      let w:BrowserJumpList += [{ 'org' : li, 'buf_nr' : bn, 'row' : cell[1], 'col' : cell[2] + 1 }]
     endfor
 
     " TODO uniqで重複削除

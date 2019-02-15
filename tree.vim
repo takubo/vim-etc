@@ -1,110 +1,89 @@
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0:
 
-">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
 " netrwは常にtree view
 let g:netrw_liststyle = 3
+
 " ファイルのプレビューを垂直分割で開く。
 let g:netrw_preview   = 1
 
-" let g:mbuf = ''
-
-function! All_buf(...)
-  let bn = bufnr('$')
-
-  for i in range(1, bn)
-    let name = bufname(i)
-    if match(name, 'NetrwTreeListing\( \d\+\)\?$') != -1
-      if a:1 == 1
-	try
-	  exe 'bdel ' i
-	  "exe 'bwipeout ' i
-	catch
-	endtry
-      else
-	echo '### ' . name . ' @ ' . i
-	sleep 1
-      endif
-    endif
-  endfor
-endfunction
-
-function! MyExplore()
-  set autochdir
-
-  let g:filename = expand("%")
-  let g:pwd = getcwd(win_getid())
-
-  call All_buf(1)
-
-  " if 0 && g:mbuf != '' | echo 'pppp ' . g:mbuf | exe 'bwipeout ' g:mbuf | sleep 3 | endif
-  " let g:bnr = bufnr('NetrwTreeListing')
-  " let g:bnm = bufname('NetrwTreeListing')
-  " if 0 && (-1 != bufnr('NetrwTreeListing')) | bdel bufnr('NetrwTreeListing') | end
-
-  exe 'cd ' . g:pwd
-  Vexplore
-  "exe 'cd ' . g:pwd
-
-  let crs = ""
-
-  for i in range(6)
-
-    " if 0 | pwd | echo i | sleep 3 | endif
-
-    if filereadable(s:root_file)
-      call MyExploreSub(crs)
-      return
-    endif
-
-    "redraw
-    "? call feedkeys("\<CR>", 'n')
-    let crs = crs . "\<CR>"
-    "normal! <CR>
-    "redraw
-
-    cd ..
-  endfor
-
-  exe 'cd ' . g:pwd
-  call MyExploreSub("")
-endfunction
-
-function! MyExploreSub(crs)
-  set autochdir
-
-  " let g:mbuf = bufnr('%')
-
-  "normal! <C-w>H
-  call feedkeys("\<C-w>H", 'n')
-  call feedkeys(a:crs, 'n')
-
-  call feedkeys("\<Esc>:\<C-u>call search('│ ' . g:filename . '$')\<CR>", 'n')
-  "call feedkeys("\<Esc>:\<Esc>\<Esc>", 'n')
-
-  "exe "normal! /│ " . g:filename . "$\<CR>n"
-  "let dummy =  search("│ " . g:filename . "$")
-endfunction
-
-"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-com! MyExplore call MyExplore()
-
-nnoremap <silent> <leader>t :<C-u>MyExplore<CR>
+let g:netrw_sort_by='name'
+let g:netrw_sort_sequence='[\/]$,\.sw\a$'
+let g:netrw_special_syntax=v:true
+let g:netrw_browse_split=0
+let g:netrw_browse_split=4
 
 let s:root_file = ".git"
 
 
-"function! MyExplore_old()
-"  let pwd = getcwd()
-"  for i in range(6)
-"    if filereadable(s:root_file)
-"      exe 'Vexplore ' . getcwd()
-"      break
-"    endif
-"    cd ..
-"  endfor
-"endfunction
+set autochdir
 
+function! s:exist_NetrwTree_win(root)
+  let root = substitute(a:root, '\\', '/', 'g')
+  for i in range(1, winnr('$'))
+    let name = bufname(winbufnr(i))
+    if match(name, 'NetrwTreeListing\( \d\+\)\?$') != -1
+      if root == substitute(getcwd(i), '\\', '/', 'g')
+        return i
+      endif
+    endif
+  endfor
+  return 0
+endfunction
+
+function! MyExplore()
+  let g:filename = expand('%')
+  let g:pwd = getcwd(win_getid())
+
+  let root = ''
+  for i in range(6)
+    if filereadable(s:root_file) || isdirectory(s:root_file)
+      let root = getcwd()
+      break
+    endif
+    cd ..
+  endfor
+
+  exe 'cd ' . g:pwd
+
+  let exist_win = <SID>exist_NetrwTree_win(root)
+  if exist_win
+    exe exist_win . 'wincmd w'
+    return
+  endif
+
+  call <SID>wipeout_old_NetrwTree_buf()
+
+  Vexplore
+  wincmd H
+  exe 'cd ' . root
+
+  call <SID>set_cursor_on_org_file(root == '' ? 0 : i)
+endfunction
+
+function! s:wipeout_old_NetrwTree_buf()
+  for i in range(1, bufnr('$'))
+    let name = bufname(i)
+    if match(name, 'NetrwTreeListing\( \d\+\)\?$') != -1
+      try
+	exe 'bwipeout ' i
+      catch
+      endtry
+    endif
+  endfor
+endfunction
+
+function! s:set_cursor_on_org_file(n)
+  if a:n > 0
+    " Netrwバッファのマッピングに展開する必要があるので、!は付けない。
+    exe 'silent normal ' . repeat("-", a:n)
+  endif
+
+  call search('\%(' . repeat('│ ', a:n) . '\)\@<=' . g:filename . '$', 'cw')
+endfunction
+
+
+com! MyExplore call MyExplore()
+
+nnoremap <silent> <leader>t :<C-u>MyExplore<CR>

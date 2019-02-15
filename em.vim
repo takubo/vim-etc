@@ -2,7 +2,7 @@ scriptencoding utf-8
 " vim: set ts=8 sw=2 sts=2 :
 
 if exists('loaded_em')
-  finish
+  "finish
 endif
 let loaded_em = v:true
 
@@ -61,25 +61,10 @@ function! s:ana_numstr(word)
 endfunc
 
 
-function! s:bin2hex(bin)
-  let hex = ''
-  let bin = a:bin
-
-  while len(bin) > 0
-    let l = len(bin)
-    let tmp = matchstr('000' . strpart(bin, l - 4), '....$')
-    let hex = s:b2h[tmp] . hex
-    let bin = substitute(bin, '[01]\{0,4\}$', '', '')
-  endwhile
-
-  return hex
-endfunc
-
-
 function! s:hex2bin(hex, disp)
-  let bin = ''
   let h2b = a:disp ? s:h2b_dsip : s:h2b_norm
 
+  let bin = ''
   for i in split(a:hex, '\zs')
     let bin .= h2b[tolower(i)] . ' '
   endfor
@@ -88,64 +73,88 @@ function! s:hex2bin(hex, disp)
 endfunc
 
 
+function! Bin2Dec(bin)
+  return Hex2Dec(Bin2Hex(a:bin))
+endfunction
+
+function! Bin2Hex(bin)
+  let bin = a:bin
+
+  let hex = ''
+  while len(bin) > 0
+    let tmp = matchstr('000' . strpart(bin, len(bin) - 4), '....$')
+    let hex = s:b2h[tmp] . hex
+    let bin = substitute(bin, '[01]\{0,4\}$', '', '')
+  endwhile
+
+  return hex
+endfunc
+
+function! Dec2Bin(dec)
+  return s:hex2bin(Dec2Hex(a:dec), v:false)
+endfunc
+
+function! Dec2Hex(dec)
+  if has('python3')
+    python3 vim.command('let hex = "' + format(int(vim.eval('a:dec'), 10), 'x') + '"')
+  else
+    let hex = printf("%08x", a:dec)
+  endif
+  let hex_len = len(hex)
+  let hex = hex_len == 1 ? '0' . hex :
+          \ hex_len == 3 ? '0' . hex :
+          \ hex_len > 4 && hex_len <  8 ? matchstr('000' . hex, '.\{8\}$') :
+          \ hex_len > 8 && hex_len < 16 ? matchstr('0000000' . hex, '.\{16\}$') :
+          \ hex
+  return hex
+endfunc
+
+function! Hex2Bin(hex)
+  return s:hex2bin(a:hex, v:false)
+endfunction
+
+function! Hex2Dec(hex)
+  if has('python3')
+    python3 vim.command('let dec = "' + str(int(vim.eval('a:hex'), 16)) + '"')
+  else
+    let dec = printf("%u", (a:hex[0:1] != '0x' ? '0x' : '') . a:hex)
+  endif
+  return dec
+endfunction
+
+
 function! s:EmDisp(word)
   let r = s:ana_numstr(a:word)
 
   let dig = len(r.numstr)
 
   if r.base == 16
-
-    if has('python3')
-      python3 vim.command('let dec = "' + str(int(vim.eval('r.numstr'), 16)) + '"')
-    else
-      let dec = printf("%10u", r.rawstr)
-    endif
+    let dec = Hex2Dec(r.numstr)
     let bin = s:hex2bin(r.numstr, v:true)
     let byt = len(r.numstr) / 2
     let bit = len(substitute(bin, '^[ o]\+\| ', '', 'g'))
-
     echo ' [Dec]' dec '    [Bin]' bin '' (winwidth(0) > 100 ? '    ' : '\n') '[Byt]' byt '    [Bit]' bit '    [Dig]' dig
     let s:now_disp = 1
 
   elseif r.base == 10
-
-    if has('python3')
-      python3 vim.command('let hex = "' + format(int(vim.eval('r.numstr'), 10), 'x') + '"')
-    else
-      let hex = printf("%08x", r.numstr)
-    endif
-    let hex_len = len(hex)
-    let hex = hex_len == 1 ? '0' . hex :
-	  \ hex_len == 3 ? '0' . hex :
-	  \ hex_len > 4 && hex_len <  8 ? matchstr('000' . hex, '.\{8\}$') :
-	  \ hex_len > 8 && hex_len < 16 ? matchstr('0000000' . hex, '.\{16\}$') :
-	  \ hex
+    let hex = Dec2Hex(r.numstr)
     let bin = s:hex2bin(hex, v:true)
     let byt = float2nr(ceil(len(hex) / 2.0))
     let bit = len(substitute(bin, '^[ o]\+\| ', '', 'g'))
-
     echo ' [Hex] 0x' . hex '    [Bin]' bin  '' (winwidth(0) > 100 ? '    ' : '\n') '[byt]' byt '    [Bit]' bit '    [Dig]' dig
     let s:now_disp = 1
 
   elseif r.base == 2
-
-    let hex = s:bin2hex(r.numstr)
-    if has('python3')
-      python3 vim.command('let dec = "' + str(int(vim.eval('hex'), 16)) + '"')
-    else
-      let dec = printf("%d", '0x' . hex)
-    endif
+    let hex = Bin2Hex(r.numstr)
+    let dec = Hex2Dec(hex)
     let byt = float2nr(ceil(len(r.numstr) / 8.0))
     let bit = len(substitute(r.numstr, '^0\+', '', ''))
-
     echo ' [Hex] 0x' . hex '    [Dec] ' dec '    [byt]' byt '    [Bit]' bit '    [Dig]' dig
     let s:now_disp = 1
 
   elseif s:now_disp
-
     echo ''
     let s:now_disp = 0
-
   endif
 endfun
 
@@ -156,9 +165,41 @@ command! EmExtendTgl :let g:em_extend_bin = !g:em_extend_bin <Bar> let g:em_exte
 
 augroup Em
   au!
-  au CursorMoved,VimResized  * EmDisp
+  au CursorMoved,VimResized * EmDisp
   au CmdwinEnter * let <SID>now_disp = 0
 augroup end
+
+
+inoremap <C-r><C-b><C-d> <C-r>=Bin2Dec('')<Left><Left>
+inoremap <C-r><C-b><C-h> <C-r>=Bin2Hex('')<Left><Left>
+inoremap <C-r><C-b><C-x> <C-r>=Bin2Hex('')<Left><Left>
+inoremap <C-r><C-d><C-b> <C-r>=Dec2Bin('')<Left><Left>
+inoremap <C-r><C-d><C-x> <C-r>=Dec2Hex('')<Left><Left>
+inoremap <C-r><C-d><C-h> <C-r>=Dec2Hex('')<Left><Left>
+inoremap <C-r><C-h><C-b> <C-r>=Hex2Bin('')<Left><Left>
+inoremap <C-r><C-h><C-d> <C-r>=Hex2Dec('')<Left><Left>
+inoremap <C-r><C-x><C-b> <C-r>=Hex2Bin('')<Left><Left>
+inoremap <C-r><C-x><C-d> <C-r>=Hex2Dec('')<Left><Left>
+
+
+function! s:bcc(func, ...)
+  let n = ( a:0 == 0 ? @" : a:1 )
+  if n == '' | return | endif
+  let n = substitute(n, '^0[bx]\|[lLuU\n]*$', '', '')
+  let m = {a:func}(n)
+  return substitute(m, ' ', '', 'g')
+endfunction
+
+command! -nargs=? B2D exe 'normal! ciw' . s:bcc('Bin2Dec', <f-args>) . "\<Esc>"
+command! -nargs=? B2H exe 'normal! ciw' . '0x' . s:bcc('Bin2Hex', <f-args>) . "\<Esc>"
+command! -nargs=? B2X B2H
+command! -nargs=? D2B exe 'normal! ciw' . s:bcc('Dec2Bin', <f-args>) . "\<Esc>"
+command! -nargs=? D2H exe 'normal! ciw' . '0x' . s:bcc('Dec2Hex', <f-args>) . "\<Esc>"
+command! -nargs=? D2X D2H
+command! -nargs=? H2B exe 'normal! ciw' . s:bcc('Hex2Bin', <f-args>) . "\<Esc>"
+command! -nargs=? X2B H2B
+command! -nargs=? H2D exe 'normal! ciw' . s:bcc('Hex2Dec', <f-args>) . "\<Esc>"
+command! -nargs=? X2D H2D
 
 
 "" Test
@@ -168,4 +209,4 @@ command! EmTestAnaNum :echo s:ana_numstr(expand("<cword>"))
 " 0xaf45 0xf0 0b011100 0716 1234 65535 0xfdb97531 0xfdb97531ff 256 0b111111110000000011010000  0101111
 " 0xaf45UL 0xf0ll 0b011100 0716 1234 65536 0xfdb97531 256a 0b111111110000000011010000  0101111
 " 98,67878,2345 0b01011111000000001101_0000 0xffffffffffffffff 0xffffffffffffffffffffffffffffffff
-" 993692464862809801080805478547854754953675 3 165535 18446744073709551606
+" 0b11 993692464862809801080805478547854754953675 3 165535 18446744073709551606

@@ -100,8 +100,8 @@ function! s:tick(timer_id)
     " Stop scrolling and the thread
     let l:st.velocity = 0
     let l:st.delta = 0
-    call timer_stop(s:timer_id)
-    unlet s:timer_id
+    "call timer_stop(s:timer_id)
+    "unlet s:timer_id
     hi CursorLine gui=underline
   endif
 endfunction
@@ -122,10 +122,9 @@ function! comfortable_motion#flick(impulse)
     let c = getchar()
     let k = nr2char(c)
     "if k != "\<Space>" && c != "\<S-Space>" && k != "\<C-e>" && k != "\<C-y>"
-    if k != "\<Space>" && k != "\<C-e>" && a:impulse > 0
+    if k != "\<Space>" && k != "\<C-e>" && k != "j" && a:impulse > 0
       break
-    endif
-    if c != "\<S-Space>" && k != "\<C-y>" && a:impulse < 0
+    elseif c != "\<S-Space>" && k != "\<C-y>" && k != "k" && a:impulse < 0
       break
     endif
   endwhile
@@ -133,7 +132,8 @@ function! comfortable_motion#flick(impulse)
   let l:st.delta = 0
   call timer_stop(s:timer_id)
   unlet s:timer_id
-  if k != "\<Space>" && c != "\<S-Space>" && k != "\<C-e>" && k != "\<C-y>"
+  hi CursorLine gui=underline
+  if k != "\<Space>" && c != "\<S-Space>" && k != "\<C-e>" && k != "\<C-y>" && k != "j" && k != "k"
     call feedkeys(k, 'm')
   endif
 endfunction

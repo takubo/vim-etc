@@ -1190,7 +1190,10 @@ endif
 function! s:tabpage_label_full(n)
   " カレントタブページかどうかでハイライトを切り替える
   "let hi = a:n is tabpagenr() ? '%#TabLineSel#' : '%#TabLine#'
-  let hi = a:n is tabpagenr() ? '%#SLFileName#' : '%#SLFileNameF#'
+  "let hi = a:n is tabpagenr() ? '%#SLFileName#' : '%#SLFileNameF#'
+  "let hi = a:n is tabpagenr() ? '%#Statusline#' : '%#StatuslineNC#'
+  "let hi = a:n is tabpagenr() ? '%#Statusline#' : '%#SLFileName#'
+  let hi = a:n is tabpagenr() ? '%#Statusline#' : '%#SLFileNameF#'
 
   let no = '[' . a:n . ']'
 
@@ -1224,24 +1227,28 @@ endfunction
 
 function! MakeTabLine()
   let titles = map(range(1, tabpagenr('$')), s:tabpage_label_func)
-  let sep = '  '  " タブ間の区切り
-  let tabpages = join(titles, sep) . sep . '%#TabLineFill#%T'
+  "let sep = '  '  " タブ間の区切り
+  let sep = '%#VertSplit# | '  " タブ間の区切り
+  let tabpages = sep . join(titles, sep) . sep . '%#TabLineFill#%T'
 
   let info = ''  " 好きな情報を入れる
   "let info .= '%#SLFileName#■■■■'
-  let info .= '%#SLFileName#●●'
+  "let info .= '%#SLFileName#●●'
+  let info .= '%#SLFileName#'
   let info .= '%#slfilename#  ' . g:BatteryInfo . '  '
   "let info .= '%#SLFileName#■■■■'
-  let info .= '%#SLFileName#●●'
+  "let info .= '%#SLFileName#●●'
+  let info .= '%#SLFileName#'
   "let info .= '%#slfilename#  ' . strftime('%Y/%m/%d (%a) %X') . '  ■■■■ '
   let info .= '%#slfilename#  ' . strftime('%Y/%m/%d (%a)  %X') . '   '
-  let info .= '%#SLFileName#●●'
+  "let info .= '%#SLFileName#●●'
+  let info .= '%#SLFileName#'
   let info .= '%##'
 
-  let left = ''
+  "let left = ''
   let left = info
   let right = "%#SLFileName# %{' [ ' . substitute(&diffopt,',',' ','g') . ' ] '} " ". info
-  return left . '    %<' . tabpages . '%=  ' . right  " タブリストを左に、情報を右に表示
+  return left . '  %<' . tabpages . '%=  ' . right  " タブリストを左に、情報を右に表示
 endfunction
 
 "===============================================================

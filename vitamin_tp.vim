@@ -46,6 +46,8 @@ hi TabLineFill	guibg=black guifg=#343434
 hi TabLineFill2	guibg=#181818 guifg=#181818
 hi TabLineSel	guibg=#111111 guifg=#a63318 gui=underline gui=bold
 hi TabLine	guifg=#ee8855 guibg=#333333
+hi TabLine	guifg=#efd3b8 guibg=#393333
+hi TabLine	guifg=#eedddd guibg=#393333
 hi Cursor 	guifg=NONE    guibg=NONE gui=reverse ctermbg=0x241
 hi Normal 	guifg=#f6f3f0 guibg=#121212 gui=none ctermfg=254 ctermbg=235
 hi SpecialKey	guifg=#242424 guibg=#121212 gui=none
@@ -84,6 +86,7 @@ hi StatusLineNC	guifg=#343434 guibg=#300a03 gui=none  |  "none
 hi StatusLineNC	guifg=#444444 guibg=#300a03 gui=none  |  "none
 "hi StatusLine	guifg=#695753 guibg=#500f05 gui=none  |  "none
 "hi StatusLineNC	guifg=#5c5a4f guibg=#200501 gui=none  |  "none
+"hi StatusLineNC	guifg=#ee8855 guibg=#333333
 hi StatusLineDate	guifg=#5c5a4f guibg=#7f1f1a
 hi StatusLineDate	guifg=#efd3b8 guibg=#7f1f1a gui=none  | "italic
 hi StatusLineDate	guifg=#5c5a4f guibg=NONE

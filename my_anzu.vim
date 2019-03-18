@@ -1,7 +1,7 @@
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
 
-so ./mycfi.vim
+so $VIMRUNTIME/pack/takubo/start/tmp/plugin/my_cfi.vim
 
 let g:anzu_status_format = '/%p ( %i / %l )'
 let g:anzu_search_limit = 999
@@ -11,10 +11,17 @@ let g:anzu_search_limit = 999
 "nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
 "nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
 "nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn):let  &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):let &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
+"nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
+"nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
+"nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn):let  &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
+"nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):let &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
+nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn): call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+
+nmap <Leader>n ggnN
+nmap <Leader>N  GNn
 " clear status
 "nmap <Esc><Esc> <Plug>(anzu-clear-search-status)
 " statusline

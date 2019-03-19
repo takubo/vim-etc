@@ -3,38 +3,9 @@ scriptencoding utf-8
 
 so $VIMRUNTIME/pack/takubo/start/tmp/plugin/my_cfi.vim
 
+
 let g:anzu_status_format = '/%p ( %i / %l )'
 let g:anzu_search_limit = 999
-
-" mapping
-"nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-"nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):let     &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-"nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn):let  &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-"nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):let &l:stl.=".'      %#hl_func_name_stl#  %{anzu#search_status()} %##'"<CR>
-nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FFn):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
-nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FFn):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
-nmap <silent> * <Plug>(anzu-star-with-echo)<Plug>(FFn): call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
-nmap <silent> # <Plug>(anzu-sharp-with-echo)<Plug>(FFn):call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
-
-nmap <Leader>n ggnN
-nmap <Leader>N  GNn
-" clear status
-"nmap <Esc><Esc> <Plug>(anzu-clear-search-status)
-" statusline
-"set statusline=%{anzu#search_status()}
-
-
-cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
-
-
-
-
-
-
 
 
 function! TBD(word)
@@ -111,6 +82,8 @@ function! Search_CWord(new, aword)
   FuncNameStl
 endfunction
 
+" CONST
+"
 unlockvar g:MySearch_Word_New g:MySearch_Word_Add g:MySearch_Word_MatchFull g:MySearch_Word_MatchPart
 
 let g:MySearch_Word_New = v:true
@@ -126,11 +99,26 @@ com! MySearchCWordNewPart call Search_CWord(g:MySearch_Word_New, g:MySearch_Word
 com! MySearchCWordAddFull call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull) | set hlsearch
 com! MySearchCWordAddPart call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart) | set hlsearch
 
-"nnoremap <silent> * :<C-u>MySearchCWordNewFull<CR>:setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nnoremap <silent> # :<C-u>MySearchCWordNewPart<CR>:setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nnoremap <silent> ! :<C-u>MySearchCWordAddFull<CR>:setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-"nnoremap <silent> & :<C-u>MySearchCWordAddPart<CR>:setl stl+=\ \ \ \ \ \ %#hl_func_name_stl#\ %{anzu#search_status()}\ %##<CR>
-nnoremap <silent> * :<C-u>MySearchCWordNewFull<CR>:let &l:stl.=".'      %#hl_func_name_stl# %{anzu#search_status()} %##'"<CR>
-nnoremap <silent> # :<C-u>MySearchCWordNewPart<CR>:let &l:stl.=".'      %#hl_func_name_stl# %{anzu#search_status()} %##'"<CR>
-nnoremap <silent> ! :<C-u>MySearchCWordAddFull<CR>:let &l:stl.=".'      %#hl_func_name_stl# %{anzu#search_status()} %##'"<CR>
-nnoremap <silent> & :<C-u>MySearchCWordAddPart<CR>:let &l:stl.=".'      %#hl_func_name_stl# %{anzu#search_status()} %##'"<CR>
+com! MySearchShowStatus call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
+
+" mapping
+
+cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
+
+nnoremap <silent> * :<C-u>MySearchCWordNewFull<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
+nnoremap <silent> # :<C-u>MySearchCWordNewPart<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
+nnoremap <silent> ! :<C-u>MySearchCWordAddFull<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
+nnoremap <silent> & :<C-u>MySearchCWordAddPart<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
+
+nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+
+nmap <Leader>n ggnN
+nmap <Leader>N  GNn
+
+
+" clear status
+"nmap <Esc><Esc> <Plug>(anzu-clear-search-status)
+" statusline
+"set statusline=%{anzu#search_status()}
+

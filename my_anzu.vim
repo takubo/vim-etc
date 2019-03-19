@@ -101,17 +101,30 @@ com! MySearchCWordAddPart call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word
 
 com! MySearchShowStatus call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
 
-" mapping
 
-cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
 
-nnoremap <silent> * :<C-u>MySearchCWordNewFull<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
-nnoremap <silent> # :<C-u>MySearchCWordNewPart<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
-nnoremap <silent> ! :<C-u>MySearchCWordAddFull<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
-nnoremap <silent> & :<C-u>MySearchCWordAddPart<CR>:let &l:stl.="      %#hl_func_name_stl# %{anzu#search_status()} %##"<CR>
+" Plug Mapping
 
-nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
-nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName):    call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)<CR>
+nnoremap <silent> <Plug>(MySearch-CWordNewFull) :<C-u>MySearchCWordNewFull<CR>
+nnoremap <silent> <Plug>(MySearch-CWordNewPart) :<C-u>MySearchCWordNewPart<CR>
+nnoremap <silent> <Plug>(MySearch-CWordAddFull) :<C-u>MySearchCWordAddFull<CR>
+nnoremap <silent> <Plug>(MySearch-CWordAddPart) :<C-u>MySearchCWordAddPart<CR>
+
+nnoremap <silent> <Plug>(MySearch-ShowStatus) :<C-u>MySearchShowStatus<CR>
+
+
+
+" Mapping
+
+cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:MySearchShowStatus<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
+
+nmap <silent> * <Plug>(MySearch-CWordNewFull)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
+nmap <silent> # <Plug>(MySearch-CWordNewPart)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
+nmap <silent> ! <Plug>(MySearch-CWordAddFull)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
+nmap <silent> & <Plug>(MySearch-CWordAddPart)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
+
+nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
+nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName)<Plug>(MySearch-ShowStatus)
 
 nmap <Leader>n ggnN
 nmap <Leader>N  GNn

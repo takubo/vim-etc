@@ -12,7 +12,7 @@ com! FuncNameEchoColor echohl hl_func_name_stl <Bar> echo cfi#format("%s", "... 
 com! FuncName          exe 'FuncNameStl' | exe 'FuncNameEcho'
 
 
-nnoremap <silent> <Plug>(FuncName) :<C-u>FuncNameStl<CR>
+nnoremap <silent> <Plug>(FuncName-Stl) :<C-u>FuncNameStl<CR>
 
 
 nnoremap <silent> ][ ][:FuncNameStl<CR>

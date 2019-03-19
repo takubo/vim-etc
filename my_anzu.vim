@@ -48,7 +48,11 @@ com! TestWord call Search_Word(expand('<cword>'), v:true, v:true)
 
 
 
-function! Search_CWord(new, aword)
+function! Search_CWord(new, aword, pos_keep)
+  if a:pos_keep
+    PushPos
+  endif
+
   " 最後のヒットだったときにエラーになる。
   "try
   "  normal! *
@@ -78,8 +82,13 @@ function! Search_CWord(new, aword)
   catch
   endtry
 
- "AnzuUpdateSearchStatusOutput
+  if a:pos_keep
+    PopPos
+  endif
+
   FuncNameStl
+  AnzuUpdateSearchStatusOutput
+  MySearchShowStatus
 endfunction
 
 " CONST
@@ -92,17 +101,20 @@ let g:MySearch_Word_Add = v:false
 let g:MySearch_Word_MatchFull = v:true
 let g:MySearch_Word_MatchPart = v:false
 
+let g:MySearch_Word_PosKeep = v:true
+let g:MySearch_Word_PosMove = v:false
+
 lockvar g:MySearch_Word_New g:MySearch_Word_Add g:MySearch_Word_MatchFull g:MySearch_Word_MatchPart
 
-com! MySearchCWordNewFullMove                  call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchFull) |                 AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordNewPartMove                  call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchPart) |                 AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordAddFullMove                  call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull) |                 AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordAddPartMove                  call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart) |                 AnzuUpdateSearchStatusOutput | set hlsearch
+com! MySearchCWordNewFullMove call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchFull, g:MySearch_Word_PosMove) | set hlsearch
+com! MySearchCWordNewPartMove call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchPart, g:MySearch_Word_PosMove) | set hlsearch
+com! MySearchCWordAddFullMove call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull, g:MySearch_Word_PosMove) | set hlsearch
+com! MySearchCWordAddPartMove call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart, g:MySearch_Word_PosMove) | set hlsearch
 
-com! MySearchCWordNewFullKeep call PushPos() | call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchFull) | call PopPos() | AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordNewPartKeep call PushPos() | call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchPart) | call PopPos() | AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordAddFullKeep call PushPos() | call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull) | call PopPos() | AnzuUpdateSearchStatusOutput | set hlsearch
-com! MySearchCWordAddPartKeep call PushPos() | call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart) | call PopPos() | AnzuUpdateSearchStatusOutput | set hlsearch
+com! MySearchCWordNewFullKeep call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchFull, g:MySearch_Word_PosKeep) | set hlsearch
+com! MySearchCWordNewPartKeep call Search_CWord(g:MySearch_Word_New, g:MySearch_Word_MatchPart, g:MySearch_Word_PosKeep) | set hlsearch
+com! MySearchCWordAddFullKeep call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchFull, g:MySearch_Word_PosKeep) | set hlsearch
+com! MySearchCWordAddPartKeep call Search_CWord(g:MySearch_Word_Add, g:MySearch_Word_MatchPart, g:MySearch_Word_PosKeep) | set hlsearch
 
 com! MySearchShowStatus call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
 
@@ -128,19 +140,18 @@ nnoremap <silent> <Plug>(MySearch-ShowStatus) :<C-u>MySearchShowStatus<CR>
 
 cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:MySearchShowStatus<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
 
-nmap <silent> * <Plug>(MySearch-CWordNewFullMove)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> # <Plug>(MySearch-CWordNewPartMove)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> ! <Plug>(MySearch-CWordAddFullMove)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> & <Plug>(MySearch-CWordAddPartMove)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
+nmap <silent> *  <Plug>(MySearch-CWordNewFullMove)
+nmap <silent> #  <Plug>(MySearch-CWordNewPartMove)
+nmap <silent> !  <Plug>(MySearch-CWordAddFullMove)
+nmap <silent> &  <Plug>(MySearch-CWordAddPartMove)
 
-nmap <silent> g* <Plug>(MySearch-CWordNewFullKeep)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> g# <Plug>(MySearch-CWordNewPartKeep)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> g! <Plug>(MySearch-CWordAddFullKeep)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> g& <Plug>(MySearch-CWordAddPartKeep)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
+nmap <silent> g* <Plug>(MySearch-CWordNewFullKeep)
+nmap <silent> g# <Plug>(MySearch-CWordNewPartKeep)
+nmap <silent> g! <Plug>(MySearch-CWordAddFullKeep)
+nmap <silent> g& <Plug>(MySearch-CWordAddPartKeep)
 
-
-nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
-nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncNameStl)<Plug>(MySearch-ShowStatus)
+nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)
+nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)
 
 nmap <Leader>n ggnN
 nmap <Leader>N  GNn

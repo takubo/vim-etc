@@ -1,8 +1,6 @@
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
 
-so $VIMRUNTIME/pack/takubo/start/tmp/plugin/my_cfi.vim
-
 
 let g:anzu_status_format = '/%p ( %i / %l )'
 let g:anzu_search_limit = 999
@@ -42,7 +40,7 @@ function! Search_CWord(new, proc_top_underscore, aword, keep_pos)
   "call MultiHighLight(search_str)
 
   if a:keep_pos
-    PushPos
+    let cursor_on_word = CursorOnWord()
   endif
 
   try
@@ -54,7 +52,11 @@ function! Search_CWord(new, proc_top_underscore, aword, keep_pos)
     " カーソルを戻す前に1度呼ばないといけない。
     AnzuUpdateSearchStatusOutput
     MySearchShowStatus
-    PopPos
+    if cursor_on_word
+      try
+	normal! N
+      endtry
+    endif
   endif
 
   call s:SearchPost()

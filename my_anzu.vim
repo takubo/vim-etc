@@ -17,7 +17,7 @@ function! s:ProcTopUnderScore(word)
 endfunction
 
 
-function! Search_CWord(new, proc_top_underscore, aword, keep_pos)
+function! s:SearchCWord(new, proc_top_underscore, aword, keep_pos)
   let search_str = expand('<cword>')
 
   if a:proc_top_underscore
@@ -63,7 +63,7 @@ function! s:SearchPost()
   normal! zv
   AnzuUpdateSearchStatusOutput
   FuncNameStl
-  call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
+  call AddAltStatusline('      <%#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
 endfunction
 
 
@@ -82,15 +82,15 @@ let s:CursorMove = v:false
 
 lockvar s:SearchNew s:SearchAdd s:MatchWord s:MatchPart
 
-com! MySearchCWordNewWordMove call Search_CWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
-com! MySearchCWordNewPartMove call Search_CWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
-com! MySearchCWordAddWordMove call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
-com! MySearchCWordAddPartMove call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
+com! MySearchCWordNewWordMove call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
+com! MySearchCWordNewPartMove call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
+com! MySearchCWordAddWordMove call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
+com! MySearchCWordAddPartMove call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
 
-com! MySearchCWordNewWordKeep call Search_CWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
-com! MySearchCWordNewPartKeep call Search_CWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
-com! MySearchCWordAddWordKeep call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
-com! MySearchCWordAddPartKeep call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
+com! MySearchCWordNewWordKeep call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
+com! MySearchCWordNewPartKeep call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
+com! MySearchCWordAddWordKeep call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
+com! MySearchCWordAddPartKeep call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
 
 
 
@@ -129,10 +129,15 @@ nmap #  <Plug>(MySearch-CWord-New-Part-Move)
 nmap !  <Plug>(MySearch-CWord-Add-Word-Move)
 nmap &  <Plug>(MySearch-CWord-Add-Part-Move)
 
-nmap g* <Plug>(MySearch-CWord-New-Word-Keep)
-nmap g# <Plug>(MySearch-CWord-New-Part-Keep)
-nmap g! <Plug>(MySearch-CWord-Add-Word-Keep)
-nmap g& <Plug>(MySearch-CWord-Add-Part-Keep)
+nmap g8 <Plug>(MySearch-CWord-New-Word-Keep)
+nmap g3 <Plug>(MySearch-CWord-New-Part-Keep)
+nmap g1 <Plug>(MySearch-CWord-Add-Word-Keep)
+nmap g7 <Plug>(MySearch-CWord-Add-Part-Keep)
+
+nmap g* g8
+nmap g# g3
+nmap g! g1
+nmap g& g7
 
 nmap n  <Plug>(MySearch-n)
 nmap N  <Plug>(MySearch-N)

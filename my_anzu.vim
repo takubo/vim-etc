@@ -1,5 +1,5 @@
 scriptencoding utf-8
-" vim:set ts=8 sts=2 sw=2 tw=0: (この行に関しては:help modelineを参照)
+" vim:set ts=8 sts=2 sw=2 tw=0 expandtab: (この行に関しては:help modelineを参照)
 
 
 let g:anzu_status_format = '/%p ( %i / %l )'
@@ -48,15 +48,11 @@ function! Search_CWord(new, proc_top_underscore, aword, keep_pos)
   catch
   endtry
 
-  if a:keep_pos
-    " カーソルを戻す前に1度呼ばないといけない。
-    AnzuUpdateSearchStatusOutput
-    MySearchShowStatus
-    if cursor_on_word
-      try
-	normal! N
-      endtry
-    endif
+  if a:keep_pos && cursor_on_word
+    try
+      normal! N
+    catch
+    endtry
   endif
 
   call s:SearchPost()
@@ -64,9 +60,9 @@ endfunction
 
 
 function! s:SearchPost()
-  FuncNameStl
   AnzuUpdateSearchStatusOutput
-  MySearchShowStatus
+  FuncNameStl
+  MySearchStl
 endfunction
 
 
@@ -95,7 +91,7 @@ com! MySearchCWordNewPartKeep call Search_CWord(s:SearchNew, g:ProcTopUnderScore
 com! MySearchCWordAddWordKeep call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
 com! MySearchCWordAddPartKeep call Search_CWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
 
-com! MySearchShowStatus call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
+com! MySearchStl call AddAltStatusline('      %#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
 
 
 
@@ -111,16 +107,23 @@ nnoremap <silent> <Plug>(MySearch-CWord-New-Part-Keep) :<C-u>MySearchCWordNewPar
 nnoremap <silent> <Plug>(MySearch-CWord-Add-Word-Keep) :<C-u>MySearchCWordAddWordKeep<CR>
 nnoremap <silent> <Plug>(MySearch-CWord-Add-Part-Keep) :<C-u>MySearchCWordAddPartKeep<CR>
 
-nnoremap <silent> <Plug>(MySearch-ShowStatus) :<C-u>MySearchShowStatus<CR>
+nnoremap <silent> <Plug>(MySearch-Stl) :<C-u>MySearchStl<CR>
+
+
+
+" Test
+com! TestProcTopUnderScore echo s:ProcTopUnderScore('word') | echo s:ProcTopUnderScore('_word') | echo s:ProcTopUnderScore('0word')
 
 
 
 " Mapping
 
-cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:MySearchShowStatus<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
+cnoremap <expr><silent> <CR> ( getcmdtype() =~ '/?' ) ?
+                           \ ( '<CR>:FuncNameStl<CR>:AnzuUpdateSearchStatusOutput<CR>:MySearchStl<CR>' ) :
+                           \ ( '<CR>' )
 
 nmap <silent> *  <Plug>(MySearch-CWord-New-Word-Move)
-nmap <silent> #  <Plug>(MySearch-CWordNewPartMove)
+nmap <silent> #  <Plug>(MySearch-CWord-New-Part-Move)
 nmap <silent> !  <Plug>(MySearch-CWord-Add-Word-Move)
 nmap <silent> &  <Plug>(MySearch-CWord-Add-Part-Move)
 
@@ -129,17 +132,11 @@ nmap <silent> g# <Plug>(MySearch-CWord-New-Part-Keep)
 nmap <silent> g! <Plug>(MySearch-CWord-Add-Word-Keep)
 nmap <silent> g& <Plug>(MySearch-CWord-Add-Part-Keep)
 
-nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)
-nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)
+nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-Stl)
+nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-Stl)
 
 nmap <Leader>n ggnN
 nmap <Leader>N  GNn
 
-
 " clear status
 "nmap <Esc><Esc> <Plug>(anzu-clear-search-status)
-" statusline
-"set statusline=%{anzu#search_status()}
-
-
-com! TestProcTopUnderScore echo s:ProcTopUnderScore('word') | echo s:ProcTopUnderScore('_word') | echo s:ProcTopUnderScore('0word')

@@ -101,15 +101,15 @@ com! MySearchShowStatus call AddAltStatusline('      %#hl_func_name_stl#  %{anzu
 
 " Plug Mapping
 
-nnoremap <silent> <Plug>(MySearch-CWordNewWordMove) :<C-u>MySearchCWordNewWordMove<CR>
-nnoremap <silent> <Plug>(MySearch-CWordNewPartMove) :<C-u>MySearchCWordNewPartMove<CR>
-nnoremap <silent> <Plug>(MySearch-CWordAddWordMove) :<C-u>MySearchCWordAddWordMove<CR>
-nnoremap <silent> <Plug>(MySearch-CWordAddPartMove) :<C-u>MySearchCWordAddPartMove<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-New-Word-Move) :<C-u>MySearchCWordNewWordMove<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-New-Part-Move) :<C-u>MySearchCWordNewPartMove<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-Add-Word-Move) :<C-u>MySearchCWordAddWordMove<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-Add-Part-Move) :<C-u>MySearchCWordAddPartMove<CR>
 
-nnoremap <silent> <Plug>(MySearch-CWordNewWordKeep) :<C-u>MySearchCWordNewWordKeep<CR>
-nnoremap <silent> <Plug>(MySearch-CWordNewPartKeep) :<C-u>MySearchCWordNewPartKeep<CR>
-nnoremap <silent> <Plug>(MySearch-CWordAddWordKeep) :<C-u>MySearchCWordAddWordKeep<CR>
-nnoremap <silent> <Plug>(MySearch-CWordAddPartKeep) :<C-u>MySearchCWordAddPartKeep<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-New-Word-Keep) :<C-u>MySearchCWordNewWordKeep<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-New-Part-Keep) :<C-u>MySearchCWordNewPartKeep<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-Add-Word-Keep) :<C-u>MySearchCWordAddWordKeep<CR>
+nnoremap <silent> <Plug>(MySearch-CWord-Add-Part-Keep) :<C-u>MySearchCWordAddPartKeep<CR>
 
 nnoremap <silent> <Plug>(MySearch-ShowStatus) :<C-u>MySearchShowStatus<CR>
 
@@ -119,15 +119,15 @@ nnoremap <silent> <Plug>(MySearch-ShowStatus) :<C-u>MySearchShowStatus<CR>
 
 cnoremap <expr><silent> <CR> ( match('/?', getcmdtype()) != -1 ) ? ( '<CR>:FuncNameStl<CR>:MySearchShowStatus<CR>:AnzuUpdateSearchStatusOutput<CR>' ) : ( '<CR>' )
 
-nmap <silent> *  <Plug>(MySearch-CWordNewWordMove)
+nmap <silent> *  <Plug>(MySearch-CWord-New-Word-Move)
 nmap <silent> #  <Plug>(MySearch-CWordNewPartMove)
-nmap <silent> !  <Plug>(MySearch-CWordAddWordMove)
-nmap <silent> &  <Plug>(MySearch-CWordAddPartMove)
+nmap <silent> !  <Plug>(MySearch-CWord-Add-Word-Move)
+nmap <silent> &  <Plug>(MySearch-CWord-Add-Part-Move)
 
-nmap <silent> g* <Plug>(MySearch-CWordNewWordKeep)
-nmap <silent> g# <Plug>(MySearch-CWordNewPartKeep)
-nmap <silent> g! <Plug>(MySearch-CWordAddWordKeep)
-nmap <silent> g& <Plug>(MySearch-CWordAddPartKeep)
+nmap <silent> g* <Plug>(MySearch-CWord-New-Word-Keep)
+nmap <silent> g# <Plug>(MySearch-CWord-New-Part-Keep)
+nmap <silent> g! <Plug>(MySearch-CWord-Add-Word-Keep)
+nmap <silent> g& <Plug>(MySearch-CWord-Add-Part-Keep)
 
 nmap <silent> n <Plug>(anzu-n-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)
 nmap <silent> N <Plug>(anzu-N-with-echo)<Plug>(FuncName-Stl)<Plug>(MySearch-ShowStatus)

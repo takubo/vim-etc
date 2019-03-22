@@ -38,7 +38,7 @@ function! s:SearchToggleMultiHighLight()
 endfunction
 
 
-function! s:ProcTopUnderScore(word)
+function! ProcTopUnderScore(word)
   if a:word[0] == '_'
     return '_\?' . a:word[1:]
   elseif a:word[0] =~ '\a'
@@ -73,7 +73,7 @@ function! s:SearchCWord(add, proc_top_underscore, aword, keep_pos)
   let search_str = expand('<cword>')
 
   if a:proc_top_underscore
-    let search_str = s:ProcTopUnderScore(search_str)
+    let search_str = ProcTopUnderScore(search_str)
   endif
 
   if a:aword
@@ -183,7 +183,7 @@ nnoremap <silent> <Plug>(MySearchT-ToggleMultiHighLight) :call <SID>SearchToggle
 
 
 " Test
-com! TestProcTopUnderScore echo s:ProcTopUnderScore('word') | echo s:ProcTopUnderScore('_word') | echo s:ProcTopUnderScore('0word')
+com! TestProcTopUnderScore echo ProcTopUnderScore('word') | echo ProcTopUnderScore('_word') | echo ProcTopUnderScore('0word')
 
 
 

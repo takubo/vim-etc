@@ -38,16 +38,6 @@ function! s:SearchToggleMultiHighLight()
 endfunction
 
 
-function! ProcTopUnderScore(word)
-  if a:word[0] == '_'
-    return '_\?' . a:word[1:]
-  elseif a:word[0] =~ '\a'
-    return '_\?' . a:word
-  endif
-  return a:word
-endfunction
-
-
 function! s:SearchSlashCR()
   if g:MySearchMultiHighLight
     "call MultiHighLight_Suspend()

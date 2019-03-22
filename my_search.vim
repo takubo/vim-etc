@@ -91,24 +91,22 @@ function! s:SearchCWord(add, proc_top_underscore, aword, keep_pos)
   "検索履歴に残すための処理
   call histadd('/', @/)
 
-  if a:keep_pos
-    let cursor_word = CursorWord()
-    let old_cursor_pos = getpos('.')
-  endif
+  let cursor_word = CursorWord()
+  let old_cursor_pos = getpos('.')
 
   try
     normal! n
   catch
   endtry
 
-  if a:keep_pos && cursor_word
-    let new_cursor_pos = getpos('.')
-    if old_cursor_pos != new_cursor_pos || cursor_word != -1
-      try
-        normal! N
-      catch
-      endtry
-    endif
+  " ここの複雑な条件は、keep処理と、常にカーソルを単語の先頭に動かすための処理が合わさっているもの。
+  let new_cursor_pos = getpos('.')
+  if (a:keep_pos && (old_cursor_pos != new_cursor_pos && cursor_word != 0 || cursor_word == 1)) ||
+   \ (!a:keep_pos && old_cursor_pos == new_cursor_pos && cursor_word == 1)
+    try
+      normal! N
+    catch
+    endtry
   endif
 
   call s:SearchPost()

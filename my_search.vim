@@ -92,7 +92,8 @@ function! s:SearchCWord(add, proc_top_underscore, aword, keep_pos)
   call histadd('/', @/)
 
   if a:keep_pos
-    let cursor_on_word = CursorOnWord()
+    let cursor_word = CursorWord()
+    let old_cursor_pos = getpos('.')
   endif
 
   try
@@ -100,11 +101,14 @@ function! s:SearchCWord(add, proc_top_underscore, aword, keep_pos)
   catch
   endtry
 
-  if a:keep_pos && cursor_on_word
-    try
-      normal! N
-    catch
-    endtry
+  if a:keep_pos && cursor_word
+    let new_cursor_pos = getpos('.')
+    if old_cursor_pos != new_cursor_pos || cursor_word != -1
+      try
+        normal! N
+      catch
+      endtry
+    endif
   endif
 
   call s:SearchPost()

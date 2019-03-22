@@ -1,11 +1,27 @@
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0 expandtab: (この行に関しては:help modelineを参照)
 
+if exists('loaded_MySearch')
+  "finish
+  call MultiHighLight_Reset()
+else
+  call EscEsc_Add('call MultiHighLight_Suspend()')
+  call EscEsc_Add('let g:MultiHighLightState = 2')
+endif
+let loaded_MySearch = v:true
 
 let g:anzu_status_format = '/%p ( %i / %l )'
 let g:anzu_search_limit = 999
 
-let g:ProcTopUnderScore = v:false
+let g:MySearchProcTopUnderScore = v:false
+let g:MySearchMultiHighLight = v:true
+
+
+let g:MultiHighLightState = 0
+"    0:初期値、multipleは未実施。または、/や*で再検索されリセットされた状態。
+"    1:multipleによるハイライト中
+"    2:EscEscでハイライトが中断された状態
+
 
 function! s:ProcTopUnderScore(word)
   if a:word[0] == '_'
@@ -17,7 +33,28 @@ function! s:ProcTopUnderScore(word)
 endfunction
 
 
-function! s:SearchCWord(new, proc_top_underscore, aword, keep_pos)
+function! s:SearchSlashCR()
+  if g:MySearchMultiHighLight
+    "call MultiHighLight_Suspend()
+    call MultiHighLight_Reset()
+    let g:MultiHighLightState = 0
+  endif
+  call <SID>SearchPost()
+endfunction
+
+
+function! s:SearchN()
+  if g:MySearchMultiHighLight
+    if g:MultiHighLightState == 2
+      call MultiHighLight_Resume()
+    endif
+    let g:MultiHighLightState = 1
+  endif
+  call <SID>SearchPost()
+endfunction
+
+
+function! s:SearchCWord(add, proc_top_underscore, aword, keep_pos)
   let search_str = expand('<cword>')
 
   if a:proc_top_underscore
@@ -28,16 +65,26 @@ function! s:SearchCWord(new, proc_top_underscore, aword, keep_pos)
     let search_str = '\<' . search_str . '\>'
   endif
 
-  if a:new
-    let @/ = search_str
-  else
+  if g:MySearchMultiHighLight
+    if a:add && g:MultiHighLightState == 0
+      call MultiHighLight_Add(@/)
+    elseif a:add && g:MultiHighLightState == 2
+      call MultiHighLight_Resume()
+    elseif !a:add
+      call MultiHighLight_Reset()
+    endif
+    call MultiHighLight_Add(search_str)
+    let g:MultiHighLightState = 1
+  endif
+
+  if a:add
     let @/ .= '\|' . search_str
+  else
+    let @/ = search_str
   endif
 
   "検索履歴に残すための処理
   call histadd('/', @/)
-
-  "call MultiHighLight(search_str)
 
   if a:keep_pos
     let cursor_on_word = CursorOnWord()
@@ -71,8 +118,8 @@ endfunction
 "
 unlockvar s:SearchNew s:SearchAdd s:MatchWord s:MatchPart
 
-let s:SearchNew = v:true
-let s:SearchAdd = v:false
+let s:SearchNew = v:false
+let s:SearchAdd = v:true
 
 let s:MatchWord = v:true
 let s:MatchPart = v:false
@@ -82,15 +129,15 @@ let s:CursorMove = v:false
 
 lockvar s:SearchNew s:SearchAdd s:MatchWord s:MatchPart
 
-com! MySearchCWordNewWordMove call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
-com! MySearchCWordNewPartMove call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
-com! MySearchCWordAddWordMove call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
-com! MySearchCWordAddPartMove call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
+com! MySearchCWordNewWordMove call <SID>SearchCWord(s:SearchNew, g:MySearchProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
+com! MySearchCWordNewPartMove call <SID>SearchCWord(s:SearchNew, g:MySearchProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
+com! MySearchCWordAddWordMove call <SID>SearchCWord(s:SearchAdd, g:MySearchProcTopUnderScore, s:MatchWord, s:CursorMove) | set hlsearch
+com! MySearchCWordAddPartMove call <SID>SearchCWord(s:SearchAdd, g:MySearchProcTopUnderScore, s:MatchPart, s:CursorMove) | set hlsearch
 
-com! MySearchCWordNewWordKeep call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
-com! MySearchCWordNewPartKeep call <SID>SearchCWord(s:SearchNew, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
-com! MySearchCWordAddWordKeep call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
-com! MySearchCWordAddPartKeep call <SID>SearchCWord(s:SearchAdd, g:ProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
+com! MySearchCWordNewWordKeep call <SID>SearchCWord(s:SearchNew, g:MySearchProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
+com! MySearchCWordNewPartKeep call <SID>SearchCWord(s:SearchNew, g:MySearchProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
+com! MySearchCWordAddWordKeep call <SID>SearchCWord(s:SearchAdd, g:MySearchProcTopUnderScore, s:MatchWord, s:CursorKeep) | set hlsearch
+com! MySearchCWordAddPartKeep call <SID>SearchCWord(s:SearchAdd, g:MySearchProcTopUnderScore, s:MatchPart, s:CursorKeep) | set hlsearch
 
 
 
@@ -107,10 +154,10 @@ nnoremap <silent> <Plug>(MySearch-CWord-New-Part-Keep) :<C-u>MySearchCWordNewPar
 nnoremap <silent> <Plug>(MySearch-CWord-Add-Word-Keep) :<C-u>MySearchCWordAddWordKeep<CR>
 nnoremap <silent> <Plug>(MySearch-CWord-Add-Part-Keep) :<C-u>MySearchCWordAddPartKeep<CR>
 
-nnoremap <silent> <Plug>(MySearch-n) n:call <SID>SearchPost()<CR>
-nnoremap <silent> <Plug>(MySearch-N) N:call <SID>SearchPost()<CR>
+nnoremap <silent> <Plug>(MySearch-n) n:call <SID>SearchN()<CR>
+nnoremap <silent> <Plug>(MySearch-N) N:call <SID>SearchN()<CR>
 
-cnoremap <silent> <Plug>(MySearch-Slash) <CR>:call <SID>SearchPost()<CR>
+cnoremap <silent> <Plug>(MySearch-SlashCR) <CR>:call <SID>SearchSlashCR()<CR>
 
 
 " Test
@@ -121,7 +168,7 @@ com! TestProcTopUnderScore echo s:ProcTopUnderScore('word') | echo s:ProcTopUnde
 " Mapping
 
 cmap <expr> <CR> ( getcmdtype() == '/' ) ?
-               \ ( '<Plug>(MySearch-Slash)' ) :
+               \ ( '<Plug>(MySearch-SlashCR)' ) :
                \ ( '<CR>' )
 
 nmap *  <Plug>(MySearch-CWord-New-Word-Move)

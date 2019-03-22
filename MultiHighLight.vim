@@ -27,7 +27,7 @@ function! MultiHighLight_Add(pat)
   let n = len(g:HighlightPatterns)
 
   if n == 0
-    call set_autocmd()
+    call s:set_autocmd()
   endif
 
   call PushPos_All()
@@ -35,6 +35,8 @@ function! MultiHighLight_Add(pat)
   call PopPos_All()
 
   call add(g:HighlightPatterns, a:pat)
+
+  let s:Suspending = v:false
 endfunction
 
 
@@ -42,7 +44,10 @@ endfunction
 " Reset
 " ---------------
 function! MultiHighLight_Reset()
-  call MultiHighLight_Suspend()
+  if !s:Suspending
+    " Suspend中にResetされるとmatchdeleteがエラーになってしまう。
+    call MultiHighLight_Suspend()
+  endif
 
   let g:HighlightPatterns = []
 endfunction
@@ -56,7 +61,9 @@ function! MultiHighLight_Suspend()
   silent tabdo windo for i in range(len(g:HighlightPatterns)) | call matchdelete(4 + i) | endfor
   call PopPos_All()
 
-  call unset_autocomd()
+  call s:unset_autocomd()
+
+  let s:Suspending = v:true
 endfunction
 
 
@@ -68,7 +75,9 @@ function! MultiHighLight_Resume()
   silent tabdo windo for i in range(len(g:HighlightPatterns)) | call matchadd('MultiHighLight' . i % s:ColorMax, g:HighlightPatterns[i], 1, 4 + i) | endfor
   call PopPos_All()
 
-  call set_autocmd()
+  call s:set_autocmd()
+
+  let s:Suspending = v:false
 endfunction
 
 
@@ -101,14 +110,14 @@ function! s:init()
   " Init Vars
   let s:ColorMax = len(s:BgColorSequence)
   let g:HighlightPatterns = []
+  let s:Suspending = v:false  " Suspend中にResetされるとmatchdeleteがエラーになってしまう。
 
   " Make highlight
   for i in range(s:ColorMax)
-    execute 'highlight MultiHighLight' . i . ' guifg=' . s:FgColorSequence[i] . ' guibg=' . s:BgColorSequence[i]
+    exe 'highlight MultiHighLight' . i . ' guifg=' . s:FgColorSequence[i] . ' guibg=' . s:BgColorSequence[i]
   endfor
 
-  call unset_autocomd()
-  call EscEsc_Add('call MultiHighLight_Suspend()')
+  call s:unset_autocomd()
 endfunction
 
 
@@ -121,3 +130,5 @@ call s:init()
 " tabdo ではなく、auにする。
 " 関数化を進める
 " au を set unsetするのではなく、関数内のスイッチで制御する
+" EscEsc_Addの処置
+" Suspendingをなくしたい

@@ -44,10 +44,7 @@ endfunction
 " Reset
 " ---------------
 function! MultiHighLight_Reset()
-  if !s:Suspending
-    " Suspend中にResetされるとmatchdeleteがエラーになってしまう。
-    call MultiHighLight_Suspend()
-  endif
+  call MultiHighLight_Suspend()
 
   let g:HighlightPatterns = []
 endfunction
@@ -57,9 +54,11 @@ endfunction
 " Suspend
 " ---------------
 function! MultiHighLight_Suspend()
-  call PushPos_All()
-  silent tabdo windo for i in range(len(g:HighlightPatterns)) | call matchdelete(4 + i) | endfor
-  call PopPos_All()
+  if !s:Suspending
+    call PushPos_All()
+    silent tabdo windo for i in range(len(g:HighlightPatterns)) | call matchdelete(4 + i) | endfor
+    call PopPos_All()
+  endif
 
   call s:unset_autocomd()
 

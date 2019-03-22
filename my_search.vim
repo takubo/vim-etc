@@ -23,6 +23,21 @@ let g:MultiHighLightState = 0
 "    2:EscEscでハイライトが中断された状態
 
 
+function! s:SearchToggleProcTopUnderScore()
+  let g:MySearchProcTopUnderScore = !g:MySearchProcTopUnderScore
+  echo 'ProcTopUnderScore ' g:MySearchProcTopUnderScore ? 'ON' : 'OFF'
+endfunction
+
+
+function! s:SearchToggleMultiHighLight()
+  let g:MySearchMultiHighLight = !g:MySearchMultiHighLight
+  if !g:MySearchMultiHighLight
+    call MultiHighLight_Reset()
+  endif
+  echo 'MultiHighLight ' g:MySearchMultiHighLight ? 'ON' : 'OFF'
+endfunction
+
+
 function! s:ProcTopUnderScore(word)
   if a:word[0] == '_'
     return '_\?' . a:word[1:]
@@ -110,8 +125,12 @@ function! s:SearchPost()
   normal! zv
   AnzuUpdateSearchStatusOutput
   FuncNameStl
-  call AddAltStatusline('      <%#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
+  call AddAltStatusline('      %<%#hl_func_name_stl#  %{anzu#search_status()} %##', 'l', 0)
 endfunction
+
+
+com! SearchToggleProcTopUnderScore * call <SID>SearchToggleProcTopUnderScore()
+com! SearchToggleMultiHighLight    * call <SID>SearchToggleMultiHighLight()
 
 
 " CONST
@@ -159,6 +178,9 @@ nnoremap <silent> <Plug>(MySearch-N) N:call <SID>SearchN()<CR>
 
 cnoremap <silent> <Plug>(MySearch-SlashCR) <CR>:call <SID>SearchSlashCR()<CR>
 
+nnoremap <silent> <Plug>(MySearch-TopUnderScore)         :call <SID>SearchToggleProcTopUnderScore()<CR>
+nnoremap <silent> <Plug>(MySearchT-ToggleMultiHighLight) :call <SID>SearchToggleMultiHighLight()<CR>
+
 
 " Test
 com! TestProcTopUnderScore echo s:ProcTopUnderScore('word') | echo s:ProcTopUnderScore('_word') | echo s:ProcTopUnderScore('0word')
@@ -173,24 +195,27 @@ cmap <expr> <CR> ( getcmdtype() == '/' ) ?
 
 nmap *  <Plug>(MySearch-CWord-New-Word-Move)
 nmap #  <Plug>(MySearch-CWord-New-Part-Move)
-nmap !  <Plug>(MySearch-CWord-Add-Word-Move)
-nmap &  <Plug>(MySearch-CWord-Add-Part-Move)
+nmap &  <Plug>(MySearch-CWord-Add-Word-Move)
+nmap @  <Plug>(MySearch-CWord-Add-Part-Move)
 
-nmap g8 <Plug>(MySearch-CWord-New-Word-Keep)
-nmap g3 <Plug>(MySearch-CWord-New-Part-Keep)
-nmap g1 <Plug>(MySearch-CWord-Add-Word-Keep)
-nmap g7 <Plug>(MySearch-CWord-Add-Part-Keep)
+nmap g* <Plug>(MySearch-CWord-New-Word-Keep)
+nmap g# <Plug>(MySearch-CWord-New-Part-Keep)
+nmap g& <Plug>(MySearch-CWord-Add-Word-Keep)
+nmap g@ <Plug>(MySearch-CWord-Add-Part-Keep)
 
-nmap g* g8
-nmap g# g3
-nmap g! g1
-nmap g& g7
+nmap g8 g*
+nmap g3 g#
+nmap g7 g&
+nmap g2 g@
 
 nmap n  <Plug>(MySearch-n)
 nmap N  <Plug>(MySearch-N)
 
 nmap <Leader>n ggnN
 nmap <Leader>N  GNn
+
+"nnoremap <Leader>& <Plug>(MySearch-TopUnderScore)
+"nnoremap <Leader>@ <Plug>(MySearchT-ToggleMultiHighLight)
 
 " clear status
 "nmap <Esc><Esc> <Plug>(anzu-clear-search-status)

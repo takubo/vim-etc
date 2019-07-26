@@ -38,6 +38,7 @@ set history=10000
 set ignorecase
 " 大文字小文字の両方が含まれている場合は大文字小文字を区別
 set smartcase
+set tagcase=match
 set incsearch
 set mps+=<:>
 set nowrapscan
@@ -368,6 +369,11 @@ cmap <expr> <CR> ( getcmdtype() == '/' ) ?
 nmap n  <Plug>(Search-n)
 nmap N  <Plug>(Search-N)
 
+"nnoremap ? /<C-p>\<Bar>
+" 末尾が\|でないときだけ、\|を追加しないと、\|の後でEscでキャンセルすると、\|が溜まっていってしまう。
+"nnoremap ? /<C-p><C-\>e getcmdline() . ( match(getcmdline(), '\|$') == -1 ? '\\|' : '') <CR>
+nnoremap ? /<C-p><C-r>=match(getcmdline(), '\|$') == -1 ? '\\|' : ''<CR>
+
 
 "----------------------------------------------------------------------------------------
 " CWord
@@ -516,8 +522,8 @@ nnoremap <silent> <A-m>     :<C-u>let c_jk_local = !c_jk_local<CR>
 " Browse
 "nnoremap H <C-o>
 "nnoremap L <C-i>
-nmap <silent> H         <Plug>(BrowserJump-Back)
-nmap <silent> L         <Plug>(BrowserJump-Foward)
+nmap <silent> H <Plug>(BrowserJump-Back)
+nmap <silent> L <Plug>(BrowserJump-Foward)
 "nmap <silent> <Leader>H <Plug>(BrowserJump-Disp)
 "nmap <silent> <Leader>L <Plug>(BrowserJump-ToggleOrgPos)
 
@@ -556,7 +562,10 @@ function! Unified_CR(mode)
     call feedkeys("\<C-]>", 'nt')
     return
   else
-    call JumpToDefine(a:mode)
+    let ret = JumpToDefine(a:mode)
+    if ret > 0
+      keeppatterns normal! gd
+    endif
     return
   endif
 endfunction
@@ -571,16 +580,25 @@ augroup MyVimrc_TagMatch
 augroup end
 
 function! TagHighlightDelete(dummy)
+  call timer_stop(a:dummy)
+
   "echo a:dummy
   "sleep 5
   "call matchdelete(g:TagMatch)
   call matchdelete(g:TagMatchI[a:dummy])
   call remove(g:TagMatchI, a:dummy . '')
   "echo g:TagMatchI
+
+  if a:dummy == g:TimerTagMatch0
+    au! ZZZZ0
+  endif
+  if a:dummy == g:TimerTagMatch
+    au! ZZZZ
+  endif
 endfunction
 
 let g:TagMatchI = {}
-let s:TagHighlightTime = 1000  " [ms]
+let s:TagHighlightTime = 1500  " [ms]
 
 " TODO
 "   ラベルならf:b
@@ -591,7 +609,7 @@ function! JumpToDefine(mode)
   let w0 = expand("<cword>")
 
   if w0 !~ '\<\i\+\>'
-    return
+    return -1
   endif
 
   let w = w0
@@ -599,6 +617,10 @@ function! JumpToDefine(mode)
   let g:TagMatch0 = matchadd('TagMatch', '\<'.w.'\>')
   let g:TimerTagMatch0 = timer_start(s:TagHighlightTime, 'TagHighlightDelete')
   let g:TagMatchI[g:TimerTagMatch0] = g:TagMatch0
+  augroup ZZZZ0
+    au!
+    au WinLeave * call TagHighlightDelete(g:TimerTagMatch0)
+  augroup end
   redraw
 
   for i in range(2 + 2)
@@ -615,7 +637,11 @@ function! JumpToDefine(mode)
       let g:TagMatch = matchadd('TagMatch', '\<'.w.'\>')
       let g:TimerTagMatch = timer_start(s:TagHighlightTime, 'TagHighlightDelete')
       let g:TagMatchI[g:TimerTagMatch] = g:TagMatch
-      return
+      augroup ZZZZ
+	au!
+	au WinLeave * call TagHighlightDelete(g:TimerTagMatch)
+      augroup end
+      return 0
     catch /:E426:/
       if w0 =~ '^_'
 	" 元の検索語は"_"始まり
@@ -629,10 +655,11 @@ function! JumpToDefine(mode)
       endif
     catch /:E433:/
       echohl ErrorMsg | echo matchstr(v:exception, 'E\d\+:.*') | echohl None
-      return
+      return 1
     endtry
   endfor
   echohl ErrorMsg | echo matchstr(exception, 'E\d\+:.*') | echohl None
+  return 1
 endfunction
 
 " カーソル位置を調整 (C専用)
@@ -682,6 +709,7 @@ nnoremap <silent> <C-S-CR>     <Esc>:call Unified_CR('sw')<CR>
 nnoremap          <C-S-CR>     <Esc>:tags<CR>;pop
 
 nmap     <silent> <BS><CR>     <BS><BS><CR>
+nmap     <silent> <Leader><CR> <Leader><Leader><CR>
 
 " Tag, Jump, and Unified CR }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -704,8 +732,11 @@ nnoremap <silent> dQ :<C-u>call PushPos_All() <Bar> exe 'bufdo diffoff' <Bar> ex
 " Toggle Scrollbind
 nnoremap dx :<C-u>setl scrollbind!<CR>
 
-" diff toggle ignorecase (uはVisualモードでの、toggle case.)
-nnoremap <expr> du match(&diffopt, 'icase' ) < 0 ? ':<C-u>set diffopt+=icase<CR>'  : ':<C-u>set diffopt-=icase<CR>'
+" diff update
+nmap du d<Space>
+
+" diff toggle ignorecase
+nnoremap <expr> dl match(&diffopt, 'icase' ) < 0 ? ':<C-u>set diffopt+=icase<CR>'  : ':<C-u>set diffopt-=icase<CR>'
 
 " diff Y(whi)tespace
 nnoremap <expr> dy match(&diffopt, 'iwhite') < 0 ? ':<C-u>set diffopt+=iwhite<CR>' : ':<C-u>set diffopt-=iwhite<CR>'
@@ -727,7 +758,7 @@ nnoremap <silent> t ]c^:FuncNameStl<CR>
 "nnoremap <silent> T [c^zz:FuncNameStl<CR>
 nnoremap <silent> T [c^:FuncNameStl<CR>
 
-" 最初にgg/G/[c/]cすると、FuncNameStlが実行されない不具合あり。対策として、t/Tをnmap。
+" 最初に gg , G , [c , ]c すると、FuncNameStlが実行されない不具合あり。対策として、t,Tをnmap。
 
 " Top Hunk
 nmap      <silent> <Leader>t ggtT
@@ -806,9 +837,10 @@ nnoremap <BS> <C-w>
 
 " Auto
 nnoremap <silent> <expr> <BS><BS>         ( <SID>WindowRatio() >= 0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
-nnoremap <silent> <expr> <Leader><Leader> ( <SID>WindowRatio() >= 0 ? ":\<C-u>vnew\<CR>" : "\<C-w>n" )
-"nnoremap <silent> <expr> <Leader><Leader> ( <SID>WindowRatio() <  0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
-"nnoremap <BS><CR> " Tag, Jump, and Unified CR を参照。
+"nnoremap <silent> <expr> <Leader><Leader> ( <SID>WindowRatio() >= 0 ? ":\<C-u>vnew\<CR>" : "\<C-w>n" )
+nnoremap <silent> <expr> <Leader><Leader> ( <SID>WindowRatio() <  0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
+"nnoremap <BS><CR>     " Tag, Jump, and Unified CR を参照。
+"nnoremap <Leader><CR> " Tag, Jump, and Unified CR を参照。
 
 " Manual
 "nnoremap gu                        <C-w>s:setl noscrollbind<CR>
@@ -1194,6 +1226,9 @@ function! s:SetDefaultStatusline(statusline_contents)
   let s:stl .= "%## %3p%% [%4L] "
  "let s:stl .= "%## %3p%%  %5L  "
   if a:statusline_contents['CurrentLineColumn']
+    let s:stl .= "%## %3v,%3c "
+  endif
+  if 0
     let s:stl .= "%## %4lL, %3v(%3c)C "
   endif
   if 0
@@ -1215,6 +1250,7 @@ com! StlFullpath let g:StatuslineContents['Fullpath'] = !g:StatuslineContents['F
 nnoremap <silent> <Leader>- :<C-u>StlFullpath<CR>
 
 com! StlCurrentLineColumn let g:StatuslineContents['CurrentLineColumn'] = !g:StatuslineContents['CurrentLineColumn'] | call <SID>SetDefaultStatusline(g:StatuslineContents)
+nnoremap <silent> <Leader>_ :<C-u>StlCurrentLineColumn<CR>
 
 " 初期設定のために1回は呼び出す。
 call s:SetDefaultStatusline(g:StatuslineContents)
@@ -1249,34 +1285,31 @@ let g:BatteryInfo = '? ---% [--:--:--]'
 
 
 
-" Unified_Space {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Unified-Space {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 "
 nmap <expr> <Space>   winnr('$') == 1 ? '<Plug>(ComfortableMotion-Flick-Down)' : '<Plug>(MyVimrc-SkipTerm-Inc)'
 nmap <expr> <S-Space> winnr('$') == 1 ? '<Plug>(ComfortableMotion-Flick-Up)'   : '<Plug>(MyVimrc-SkipTerm-Dec)'
 
-" Unified_Space }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+" Unified-Space }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 
 
 " Mru {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 
 " MRU Plugin ----------------------------------------------------------------------------------------------
-"let MRU_Window_Height = min([20, &lines / 4 ])
-"let MRU_Window_Height = max([8, &lines / 4 ])
-let MRU_Window_Height = 25
 augroup MyVimrc_MRU
-    au!
-    "au VimResized * let MRU_Window_Height = min([25, &lines / 3 ])
+  au!
   au VimEnter,VimResized * let MRU_Window_Height = max([8, &lines / 3 ])
 augroup end
 " nnoremap <silent> <leader>o :<C-u>MRU<CR>
+nnoremap <Leader>o :<C-u>MRU<Space>
+
 
 " My MRU --------------------------------------------------------------------------------------------------
+" TODO My MRU : Emergency
 command! -nargs=* MRU2 exe 'browse filter %\c' . substitute(<q-args>, '[ *]', '.*', 'g') . '% oldfiles'
 " nnoremap <Leader>o  :<C-u>/ oldfiles<Home>browse filter /\c
 
-" Common --------------------------------------------------------------------------------------------------
-nnoremap <Leader>o :<C-u>MRU<Space>
 
 " Mru }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -1428,51 +1461,82 @@ endif
 
 " Configuration {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 
-let s:vimrc_path  = 'C:/User/' . $USERNAME . '/.vimrc'
-let s:gvimrc_path = 'C:/User/' . $USERNAME . '/.gvimrc'
-let s:colors_path = 'C:/User/' . $USERNAME . '/vimfiles/colors/'
 
-let s:vimrc_path  = '~/.vimrc'
-let s:gvimrc_path = '~/.gvimrc'
-let s:colors_path = '~/vimfiles/colors/'
+let g:vimrc_path  = '~/.vimrc'
+let g:gvimrc_path = '~/.gvimrc'
+let g:colors_path = '~/vimfiles/colors/'
 
-com! ReVimrc :exe 'so ' . s:vimrc_path
 
-com! Vimrc   :exe 'sp '     . s:vimrc_path
-com! VIMRC   :exe 'sp '     . s:vimrc_path
-com! EVIMRC  :exe 'e '      . s:vimrc_path
-com! VVIMRC  :exe 'vsp '    . s:vimrc_path
-com! TVIMRC  :exe 'tabnew ' . s:vimrc_path
+com! EVIMRC  :exe 'e      ' . g:vimrc_path
+com! SVIMRC  :exe 'sp     ' . g:vimrc_path
+com! TVIMRC  :exe 'tabnew ' . g:vimrc_path
+com! VVIMRC  :exe 'vs     ' . g:vimrc_path
+"com! VIMRC   :exe <SID>WindowRatio() >= 0 ? 'VVIMRC' : 'SVIMRC'
+com! VIMRC   :exe IsEmptyBuf() ? ':EVIMRC' : <SID>WindowRatio() >= 0 ? 'VVIMRC' : 'SVIMRC'
+com! Vimrc   :VIMRC
 
-com! Gvimrc  :exe 'sp '     . s:gvimrc_path
-com! GVIMRC  :exe 'sp '     . s:gvimrc_path
-com! EGVIMRC :exe 'e '      . s:gvimrc_path
-com! VGVIMRC :exe 'vsp '    . s:gvimrc_path
-com! TGVIMRC :exe 'tabnew ' . s:gvimrc_path
+com! EGVIMRC :exe 'e      ' . g:gvimrc_path
+com! SGVIMRC :exe 'sp     ' . g:gvimrc_path
+com! TGVIMRC :exe 'tabnew ' . g:gvimrc_path
+com! VGVIMRC :exe 'vs     ' . g:gvimrc_path
+"com! GVIMRC  :exe <SID>WindowRatio() >= 0 ? 'VGVIMRC' : 'SGVIMRC'
+com! GVIMRC  :exe IsEmptyBuf() ? ':EGVIMRC' : <SID>WindowRatio() >= 0 ? 'VGVIMRC' : 'SGVIMRC'
+com! Gvimrc  :Gvimrc
 
-com! EditColor  :exe 'sp ' . s:colors_path . g:colors_name . '.vim'
-com! VEditColor :exe 'vs ' . s:colors_path . g:colors_name . '.vim'
-com! VColorEdit :exe 'vs ' . s:colors_path . g:colors_name . '.vim'
+com! EEditColor :exe 'e      ' . g:colors_path . g:colors_name . '.vim'
+com! SEditColor :exe 'sp     ' . g:colors_path . g:colors_name . '.vim'
+com! TEditColor :exe 'tabnew ' . g:colors_path . g:colors_name . '.vim'
+com! VEditColor :exe 'vs     ' . g:colors_path . g:colors_name . '.vim'
+"com! EditColor  :exe <SID>WindowRatio() >= 0 ? 'VEditColor' : 'SEditColor'
+com! EditColor  :exe IsEmptyBuf() ? ':EEditColor' : <SID>WindowRatio() >= 0 ? 'VEditColor' : 'SEditColor'
 
-let g:vimrc_buf_name  = '^' . s:vimrc_path
-let g:gvimrc_buf_name = '^' . s:gvimrc_path
-let g:color_buf_name  = '^' . s:colors_path
+
+let g:vimrc_buf_name  = '^' . g:vimrc_path
+let g:gvimrc_buf_name = '^' . g:gvimrc_path
+let g:color_buf_name  = '^' . g:colors_path
 let g:color_file_ext  = '.vim$'
 
-nnoremap <expr> <Leader>v  ( len(win_findbuf(buffer_number(g:vimrc_buf_name))) > 0 ) && win_id2win(reverse(win_findbuf(buffer_number(g:vimrc_buf_name)))[0]) > 0 ?
-			\  ( win_id2win(reverse(win_findbuf(buffer_number(g:vimrc_buf_name)))[0]) . '<C-w><C-w>' ) :
-			\  ( bufname('')=='' && &buftype=='' && !&modified ) ? ':EVIMRC<CR>' :
-			\  ( <SID>WindowRatio() >= 0 ? ':VVIMRC<CR>' : ':VIMRC<CR>' )
-nnoremap <expr> <Leader>V  ( len(win_findbuf(buffer_number(g:color_buf_name . g:colors_name . g:color_file_ext))) > 0 ) ?
-			\  ( win_id2win(win_findbuf(buffer_number(g:color_buf_name . g:colors_name . g:color_file_ext))[0]) . '<C-w><C-w>' ) :
-			\  ( <SID>WindowRatio() >= 0 ? ':VEditColor<CR>' : ':EditColor<CR>' )
-nnoremap <expr> <Leader><C-v>
-			\  ( len(win_findbuf(buffer_number(g:gvimrc_buf_name))) > 0 ) && win_id2win(reverse(win_findbuf(buffer_number(g:gvimrc_buf_name)))[0]) > 0 ?
-			\  ( win_id2win(reverse(win_findbuf(buffer_number(g:gvimrc_buf_name)))[0]) . '<C-w><C-w>' ) :
-			\  ( bufname('')=='' && &buftype=='' && !&modified ) ? ':EGVIMRC<CR>' :
-			\  ( <SID>WindowRatio() >= 0 ? ':VGVIMRC<CR>' : ':GVIMRC<CR>' )
+nnoremap <expr> <silent> <Leader>v  ( len(win_findbuf(bufnr(g:vimrc_buf_name))) > 0 ) && ( win_id2win(reverse(win_findbuf(bufnr(g:vimrc_buf_name)))[0]) > 0 ) ?
+				 \  ( win_id2win(reverse(win_findbuf(bufnr(g:vimrc_buf_name)))[0]) . '<C-w><C-w>' ) : ':VIMRC<CR>'
+				"\  ( bufname('')=='' && &buftype=='' && !&modified ) ? ':EVIMRC<CR>' : ':VIMRC<CR>'
+
+nnoremap <expr> <silent> <Leader><C-v>
+				 \  ( len(win_findbuf(bufnr(g:gvimrc_buf_name))) > 0 ) && ( win_id2win(reverse(win_findbuf(bufnr(g:gvimrc_buf_name)))[0]) > 0 ) ?
+				 \  ( win_id2win(reverse(win_findbuf(bufnr(g:gvimrc_buf_name)))[0]) . '<C-w><C-w>' ) : ':GVIMRC<CR>'
+				"\  ( bufname('')=='' && &buftype=='' && !&modified ) ? ':EGVIMRC<CR>' : ':GVIMRC<CR>'
+
+nnoremap <expr> <silent> <Leader>V  ( len(win_findbuf(bufnr(g:color_buf_name . g:colors_name . g:color_file_ext))) > 0 ) && ( win_id2win(reverse(win_findbuf(bufnr(g:color_buf_name . g:colors_name . g:color_file_ext)))[0]) > 0 ) ?
+				 \  ( win_id2win(win_findbuf(bufnr(g:color_buf_name . g:colors_name . g:color_file_ext))[0]) . '<C-w><C-w>' ) : ':EditColor<CR>'
+				"\  ( bufname('')=='' && &buftype=='' && !&modified ) ? ':EEditColor<CR>' : ':EditColor<CR>'
+
+
+com! ReVimrc :exe 'so ' . g:vimrc_path
+
 
 " Configuration }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+
+
+
+" Swap Exists {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+let s:swap_select = v:false
+
+augroup MyVimrc_SwapExists
+  au!
+  au SwapExists * if s:swap_select | let v:swapchoice = '' | else | let v:swapchoice = 'o' | endif
+augroup END
+
+function! s:swap_select()
+  let s:swap_select = v:true
+  edit %
+  let s:swap_select = v:false
+endfunction
+
+com! SwapSelect call s:swap_select()
+
+"nnoremap <Leader>E :<C-u>call <SID>swap_select()<CR>
+
+" Swap Exists }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 
 
@@ -1566,8 +1630,18 @@ exe 'set transparency=' . g:my_transparency
 
 
 function! Func_Name_Stl(alt_stl_time)
-  let stl="   %m   %#hl_func_name_stl#   " . cfi#format("%s ()", "... ()") . "   %##"
-  call SetAltStatusline(stl, 'l', a:alt_stl_time)
+  if 0
+    let func_name = cfi#format('%s ()', '')
+    if func_name != ''
+      let stl = '   %m   %#hl_func_name_stl#   ' . func_name . '   %##'
+      call SetAltStatusline(stl, 'l', a:alt_stl_time)
+    else
+      call RestoreDefaultStatusline(v:true)
+    endif
+  else
+    let stl = '   %m   %#hl_func_name_stl#   ' . cfi#format('%s ()', '... ()') . '   %##'
+    call SetAltStatusline(stl, 'l', a:alt_stl_time)
+  endif
 endfunction
 
 
@@ -1586,14 +1660,19 @@ nnoremap <silent> , :<C-u>FuncName<CR>
 
 " Command Line での関数名挿入
 cnoremap <C-r><C-f> <C-R>=cfi#format('%s', '')<CR>
-cmap     <C-r>f <C-r><C-f>
+cmap     <C-r>f     <C-r><C-f>
 
 
 " FuncName }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 
 
-" Util {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Util Functions {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+
+function! IsEmptyBuf()
+  return bufname('')=='' && &buftype=='' && !&modified
+endfunction
 
 
 function! TitleCase(str)
@@ -1635,23 +1714,63 @@ function! Factorial(n)
 endfunction
 
 
-" Util }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+" 返り値
+"   CursorがWordの上:       正整数
+"   CursorがWordの上でない: 0
+function! IsCursorOnWord()
+  return search('\%#\k', 'cnz')
+endfunction
+
+
+" 返り値
+"   CursorがWordの先頭:             -1
+"   CursorがWordの上(先頭でなはい):  1
+"   CursorがWordの上でない:          0
+function! CursorWord()
+  if search('\<\%#\k', 'cnz')
+    return -1
+  elseif search('\%#\k', 'cnz')
+    return 1
+  endif
+  return 0
+endfunction
+
+function! CursorWord()
+  return search('\<\%#\k', 'cnz') ? -1 : search('\%#\k', 'cnz') ? 1 : 0
+endfunction
+
+" TODO rename CursorWord() -> CursorOnWord()
+
+" Util Funtions }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 
 
-">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-com! Tab2Space :setlocal   expandtab | retab<CR>
-com! Space2Tab :setlocal noexpandtab | retab!<CR>
+" Util Commands {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 
-" Windowsでの設定例です。Mac他の場合は外部コマンド部分を読み替えてください。
-au FileType plantuml command! OpenUml :!/cygdrive/c/Program\ Files/Google/Chrome/Application/chrome.exe %
+
+com! AR :setl autoread!
+
+
+com! Tab2Space setlocal   expandtab | retab<CR>
+com! Space2Tab setlocal noexpandtab | retab!<CR>
+com! T2S Tab2Space
+com! S2T Space2Tab
+
 
 com! FL help function-list<CR>
 
+
+com! -nargs=1 Unicode exe 'normal! o<C-v>u' . tolower('<args>') . '<Esc>'
+
+
 com! XMLShape :%s/></>\r</g | filetype indent on | setf xml | normal gg=G
 
-com! AR :setl autoread!
-"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+" Windowsでの設定例です。他の場合は外部コマンド部分を読み替えてください。
+au FileType plantuml com! OpenUml :!/cygdrive/c/Program\ Files/Google/Chrome/Application/chrome.exe %
+
+
+" Util Commands }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
 
 
@@ -1701,27 +1820,14 @@ nnoremap <silent> <C-\> ]c^:FuncNameStl<CR>
 nnoremap <silent> <C-]> g;:FuncNameStl<CR>
 nnoremap <silent> <C-\> g,:FuncNameStl<CR>
 
-nnoremap U                         <C-w>n
+nnoremap <silent> U     :<C-u>new<CR>
+nnoremap <silent> <C-u> :<C-u>new<CR>
+nnoremap <silent> <C-d> :<C-u>vnew<CR>
 
 nnoremap ( zh
 nnoremap ) zl
 nnoremap g4 g$
 nnoremap g6 g^
-
-
-
-function! CursorOnWord()
-  return search('\%#\k', 'cnz')
-endfunction
-function! CursorWord()
-  if search('\<\%#\k', 'cnz')
-    return -1
-  elseif search('\%#\k', 'cnz')
-    return 1
-  endif
-  return 0
-endfunction
-
 
 
 function! ZZ()
@@ -1735,7 +1841,116 @@ endfunction
 let plugin_dicwin_disable = v:true
 
 ru! ftplugin/man.vim
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+"augroup MyVimrcGui
+"  au!
+"  au CursorHold * normal! <C-l>
+"augroup end
+
+
+"----------------------------------------------------------------------------------------
+" Move
+
+nnoremap <silent> <Left>  <C-w>h
+nnoremap <silent> <Down>  <C-w>j
+nnoremap <silent> <Up>    <C-w>k
+nnoremap <silent> <Right> <C-w>l
+
+
+
+nmap gt ggt
+nmap gT GT
+
+"-------------------------------------------------------------------
+" カーソル下のhighlight情報を表示する {{{
+function! s:get_syn_id(transparent)
+    let synid = synID(line('.'), col('.'), 1)
+    return a:transparent ? synIDtrans(synid) : synid
+endfunction
+function! s:get_syn_name(synid)
+    return synIDattr(a:synid, 'name')
+endfunction
+function! s:get_highlight_info()
+    execute "highlight " . s:get_syn_name(s:get_syn_id(0))
+    execute "highlight " . s:get_syn_name(s:get_syn_id(1))
+endfunction
+command! HighlightInfo call s:get_highlight_info()
+"-------------------------------------------------------------------
+
+
+" Basic {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Cursor Move, CursorLine, CursorColumn, and Scroll {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Emacs {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" EscEsc {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Search {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Substitute {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Grep {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Quickfix & Locationlist {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Tag, Jump, and Unified CR {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Diff {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Window {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Terminal {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Buffer {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Tab {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Tabline {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Statusline {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Battery {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Unified-Space {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Mru {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Completion {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" i_Esc {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Snippets {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Configuration {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Swap Exists {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Other Key-Maps {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Clever-f {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Transparency {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" FuncName {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Util {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Basic {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+
+
+
+" Cursor Move, CursorLine, CursorColumn, and Scroll {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Tag, Jump, and Unified CR {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Unified-Space {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Tabline {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Statusline {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Battery {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Window {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Terminal {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Buffer {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Tab {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Search {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Grep {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Quickfix & Locationlist {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Substitute {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Diff {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Completion {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Snippets {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" i_Esc {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" EscEsc {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Configuration {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Emacs {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Swap Exists {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Clever-f {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Mru {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" Transparency {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+" FuncName {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Other Key-Maps {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+
+" Util {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
+"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 scriptencoding utf-8
 " vim:set ts=8 sts=8 sw=2 tw=0: (この行に関しては:help modelineを参照)
 
@@ -1756,7 +1971,9 @@ let colors_name = "Rimpa"
 hi Normal	guifg=#f6f3f0	guibg=#202020	gui=none	ctermfg=254	ctermbg=235
 hi Normal	guifg=#f6f3f0	guibg=#282828	gui=none	ctermfg=254	ctermbg=235
 hi NonText	guifg=#808080	guibg=#303030	gui=none	ctermfg=242	ctermbg=237
-hi Visual	guifg=#ffffd7	guibg=#444444	gui=none	ctermfg=186	ctermbg=238
+"hi Visual	gui=reverse
+"hi Visual	guifg=#ffffd7	guibg=#444444	gui=none	ctermfg=186	ctermbg=238
+hi Visual	guifg=NONE	guibg=#444444	gui=none	ctermfg=186	ctermbg=238
 hi FoldColumn	guifg=#ff5d28	guibg=#444444
 hi Folded	guifg=#c0c0c0	guibg=#252525	gui=none
 hi SignColumn	guifg=White	guibg=Red
@@ -1767,8 +1984,16 @@ hi CursorLine	guifg=NONE	guibg=NONE	gui=underline			ctermbg=NONE	cterm=underline
 hi CursorColumn	guifg=NONE	guibg=#121212	gui=NONE			ctermbg=236
 hi CursorColumn	guifg=NONE	guibg=#202020	gui=NONE			ctermbg=236
 hi CursorColumn	guifg=NONE	guibg=#1A1A1A	gui=NONE			ctermbg=236
-hi CursorLineNr	guifg=#ffffff	guibg=#000000	gui=NONE	ctermfg=yellow			cterm=bold,underline
+"hi CursorLineNr	guifg=#ffffff	guibg=#000000	gui=NONE	ctermfg=yellow			cterm=bold,underline
+"hi CursorLineNr	guifg=#ffffff	guibg=#121212	gui=NONE	ctermfg=yellow			cterm=bold,underline
 hi LineNr	guifg=#5c5a4f	guibg=#121212	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#5c5a4f	guifg=#121212	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#5c5a5f	guifg=#ffffff	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#5c5a5f	guifg=#121212	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#ff302d	guifg=#121212	gui=none	ctermfg=239	ctermbg=232
+hi CursorLineNr	guibg=#cf302d	guifg=#121212	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#121212	guifg=#cf302d	gui=none	ctermfg=239	ctermbg=232
+"hi CursorLineNr	guibg=#000000	guifg=#cf302d	gui=none	ctermfg=239	ctermbg=232
 hi Search	guifg=white	guibg=#b7282e
 hi MatchParen	guifg=#f6f3e8	guibg=#857b6f	gui=bold	ctermbg=59
 hi Title	guifg=#f6f3e8	guibg=NONE	gui=bold
@@ -1792,17 +2017,19 @@ hi StatusLineTermNC	guifg=#8f7368	guibg=#6d2006	gui=none
 
 hi WildMenu		guifg=#ffffff	guibg=#000000
 
-hi VertSplit		guifg=#121212	guibg=#300a03	gui=none
-hi VertSplit		guifg=#7f1f1a	guibg=black	gui=none
-hi VertSplit		guifg=#7f1f1a	guibg=#121212	gui=none
-hi VertSplit		guifg=#121212	guibg=#121212	gui=none
-hi VertSplit		guifg=#282828	guibg=#282828	gui=none	ctermfg=254	ctermbg=235
+"hi VertSplit		guifg=#121212	guibg=#300a03	gui=none
+"hi VertSplit		guifg=#7f1f1a	guibg=black	gui=none
+"hi VertSplit		guifg=#7f1f1a	guibg=#121212	gui=none
+"hi VertSplit		guifg=#282828	guibg=#282828	gui=none	ctermfg=254	ctermbg=235
+"hi VertSplit		guifg=#121212	guibg=#121212	gui=none
+hi VertSplit		guifg=#282828	guibg=#282828	gui=none
 
 hi TabLine		guifg=#eeddcc	guibg=black	gui=none
 hi TabLine		guifg=#eeddcc	guibg=black	gui=underline
 hi TabLineSel		guifg=#efd3b8	guibg=#7f1f1a	gui=none
 hi TabLineSel		guifg=#a63318	guibg=#111111	gui=underline
 hi TabLineSel		guifg=#a63318	guibg=#111111	gui=none
+hi TabLineSel		guifg=indianred
 hi TabLineFill		guifg=#343434	guibg=black
 hi TabLineDate		guifg=#efd3b8	guibg=#7f1f1a	gui=none
 
@@ -1822,10 +2049,15 @@ hi Type 	guifg=#cdd129	gui=none	ctermfg=184
 hi Statement 	guifg=#af5f5f	gui=none	ctermfg=131
 hi Keyword	guifg=#cdd129	gui=none	ctermfg=184
 hi PreProc 	guifg=#ede39e	gui=none	ctermfg=187
+hi PreProc	guifg=indianred
+hi PreProc 	guifg=#ff5d28	gui=none	ctermfg=202
+hi PreProc	guifg=#9999bb
+hi String 	guifg=indianred
+hi Number	guifg=indianred
 hi Number	guifg=#ede39e	gui=none	ctermfg=187
 hi Special	guifg=#acf0f2	gui=none	ctermfg=159
 
-if 1
+if 0
   " COMMON COLORS AND SETTINGS
   highlight PreProc guifg=#dfaf87 guibg=NONE gui=NONE ctermfg=180 ctermbg=NONE cterm=NONE
   highlight Function guifg=#875f5f guibg=NONE gui=NONE ctermfg=95 ctermbg=NONE cterm=NONE
@@ -1898,6 +2130,22 @@ function! s:SetStatusLineColor(mode)
   endif
 endfunction
 
+let s:sss = 1
+
+if s:sss
+function! s:SetStatusLineColor(mode)
+  if a:mode == 'Insert'
+    "silent highlight	CursorLineNr	guifg=White	guibg=#1a1f7f	gui=NONE	ctermfg=Blue			cterm=bold,underline
+    "silent highlight	CursorLineNr	guifg=#aaccff	guibg=#1a1f7f	gui=NONE	ctermfg=Blue			cterm=bold,underline
+    "silent highlight	CursorLineNr	guifg=black	guibg=darkyellow	gui=NONE	ctermfg=Blue			cterm=bold,underline
+    silent highlight	CursorLineNr	guifg=#aaccff	guibg=#0000ff	gui=NONE	ctermfg=Blue			cterm=bold,underline
+  else
+    highlight clear CursorLineNr
+    silent exec s:slhlcmdd
+  endif
+endfunction
+endif
+
 function! s:GetHighlight(hi)
   redir => hl
   exec 'highlight '.a:hi
@@ -1909,6 +2157,7 @@ endfunction
 
 silent! let s:slhlcmd = 'highlight ' . s:GetHighlight('StatusLine')
 
+silent! let s:slhlcmdd = 'highlight ' . s:GetHighlight('CursorLineNr')
 
 
 
@@ -1982,7 +2231,7 @@ endif
 let g:font_init_done = v:true
 
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0:
 
@@ -2020,349 +2269,11 @@ com! EscDisp echo s:EscEsc
 
 let &cpo = s:save_cpo
 unlet s:save_cpo
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-scriptencoding utf-8
-" vi:set ts=8 sts=2 sw=2 tw=0 nowrap:
-"
-" dicwin.vim - Dictionary window
-"
-" URL where you can get 'gene.txt':
-"   http://www.namazu.org/~tsuchiya/sdic/data/gene.html
-
-let s:myname = expand('<sfile>:t:r')
-
-let s:lastword = ''
-let s:lastpattern = ''
-
-function! s:DicwinOnload()
-  call s:DetermineDictpath()
-endfunction
-
-function! s:DetermineDictpath()
-  " Search default dictionary
-  if !exists('g:dicwin_dictpath')
-    let s:dict = 'gene.txt'
-    let g:dicwin_dictpath = s:GlobPath(&rtp, 'dict/'.s:dict)
-    if g:dicwin_dictpath == ''
-      let g:dicwin_dictpath = s:GlobPath(&rtp, s:dict)
-    endif
-    unlet s:dict
-  endif
-  " Windows return '\\' as directory separator in globpath(), replace it.
-  "let g:dicwin_dictpath = substitute(g:dicwin_dictpath, '\\', '/', 'g')
-endfunction
-
-function! s:GlobPath(paths, target)
-  let list = split(globpath(a:paths, a:target), "\n")
-  if len(list) <= 0
-    return ''
-  else
-    return list[0]
-  end
-endfunction
-
-"
-" WinEnter/WinLeave hooks
-"
-function! s:DicWinEnter()
-  if winbufnr(2) > 0
-    exe "normal! 8\<C-W>_"
-  else
-    exe "quit!"
-  endif
-  setlocal wrap
-endfunction
-
-function! s:DicWinLeave()
-  setlocal nowrap
-  2 wincmd _
-  normal! zt
-endfunction
-
-function! s:DicWinUnload()
-  if exists('w:dicwin_dicwin')
-    unlet w:dicwin_dicwin
-  endif
-endfunction
-
-"
-" GenerateSearchPatternEnglish(word)
-"
-function! s:GenerateSearchPatternEnglish(word)
-  let pat = a:word
-  if pat =~ 's$'
-    if pat =~ 'ies$'
-      let pat = substitute(pat, 'ies$', '\\(ies\\=\\|y\\)', '')
-    else
-      let pat = pat . '\='
-    endif
-  elseif pat =~ 'ied$'
-    let pat = substitute(pat, 'ied$', '\\(y\\|ied\\|ie\\)\\=', '')
-  elseif pat =~ 'ed$'
-    let pat = substitute(pat, 'ed$', '\\(ed\\|e\\)\\=', '')
-  elseif pat =~ 'ing$'
-    if pat =~ '\(.\)\1ing$'
-      let pat = substitute(pat, '\(.\)ing$', '\1\\=\\(ing\\|e\\)\\=', '')
-    else
-      let pat = substitute(pat, 'ing$', '\\(ing\\|e\\)\\=', '')
-    endif
-  elseif pat =~ 'able$'
-    let pat = substitute(pat, 'able$', '\\(able\\|e\\)', '')
-  elseif pat =~ '[.,]$'
-    let pat = substitute(pat, '[,.]$', '', '')
-  endif
-  return "\\c" . pat
-endfunction
-
-function! s:Query()
-  let wquery = input(s:myname. ': Input search word: ')
-  return s:OpenDictionary(g:dicwin_dictpath, wquery)
-endfunction
-
-" 
-" Close()
-"   Close window of dictionary [a:dic].
-"
-function! s:Close()
-  call s:PrevWindowMark()
-  if s:GoDictWindow() >= 0
-    close
-    call s:PrevWindowRevert()
-  endi
-endfunction
-
-" Search(dic, dir)
-"   dir: 0:next / 1:previous
-" Search next/previous word in dictionary.
-function! s:Search(dic, dir)
-  if filereadable(a:dic) != 1
-    return
-  endif
-  " Check existance of previous searched word
-  if s:lastpattern == '' || s:lastword == ''
-    echohl Error
-    echo s:myname. ': No given word before.'
-    echohl None
-    return
-  endif
-  " Initialize variables for direction
-  if a:dir == 0
-    let cmd = '/'
-    let dirname = 'next'
-    let restart  = 'TOP'
-  else
-    let cmd = '?'
-    let dirname = 'previous'
-    let restart  = 'BOTTOM'
-  endif
-  " Do search
-  call s:PrevWindowMark()
-  call s:OpenDictionaryWindow(a:dic)
-  let line_before = line('.')
-  execute 'silent! normal! ' .cmd. '^' .s:lastpattern. "\\>\<CR>"
-  let line_after = line('.')
-  " Output result
-  if line_before == line_after
-    echohl WarningMsg
-    echo s:myname. ': No other "' .s:lastword. '".'
-    echohl None
-  elseif (a:dir == 0 && line_before < line_after) || (a:dir != 0 && line_before > line_after)
-    "echo s:myname. ': Found ' .dirname. ' "' .s:lastword. '" in line ' .line_after. '.'
-  else
-    echohl WarningMsg
-    echo s:myname. ': Search from ' .restart. ' and found ' .dirname. ' "' .s:lastword. '".'
-    echohl None
-  endif
-  " Revert previous window
-  call s:PrevWindowRevert()
-endfunction
-
-" OpenDictionary(dic, word)
-"   Open window of dictionary [a:dic] and search a:word.
-"
-function! s:OpenDictionary(dic, word)
-  if filereadable(a:dic) != 1
-    return
-  endif
-  if a:word != ''
-    if a:word ==# s:lastword
-      call s:Search(a:dic, 0)
-      return
-    endif
-    " Remember previous window and open dictionary window
-    call s:PrevWindowMark()
-    call s:OpenDictionaryWindow(a:dic)
-    " Search the word
-    let s:lastword = a:word
-    let s:lastpattern = s:GenerateSearchPatternEnglish(a:word)
-    execute "silent! normal! gg/^" . s:lastpattern . "\\%( [+~]\\|$\\)\<CR>"
-    " Output  result
-    if line('.') != 1
-      "echo s:myname . ": Found \"" . s:lastword . '".'
-    elseif exists('b:DictwinAuto') && !b:DictwinAuto
-      echohl ErrorMsg
-      echo s:myname . ": Can't find \"" . s:lastword . '".'
-      echohl None
-    endif
-  else
-    " output 'no word message'
-    echohl WarningMsg
-    echo s:myname . ": No word at under cursor."
-    echohl None
-  endif
-  " Leave dictionary window
-  call s:PrevWindowRevert()
-endfunction
-
-function! s:OpenDictionaryWindow(name)
-  if filereadable(a:name) != 1
-    return
-  endif
-  if s:GoDictWindow() < 0
-    if &shellslash == 0
-      let name = substitute(a:name, '\\', '/', 'g')
-    else
-      let name = a:name
-    endif
-    execute "augroup Dictionary"
-    execute "autocmd!"
-    execute "autocmd WinEnter " . name . " call <SID>DicWinEnter()"
-    execute "autocmd WinLeave " . name . " call <SID>DicWinLeave()"
-    execute "autocmd BufUnload " . name . " call <SID>DicWinUnload()"
-    execute "augroup END"
-    execute 'silent normal! :sview ' . a:name ."\<CR>"
-    let w:dicwin_dicwin = 1
-    let s:lastword = ''
-    let s:lastpattern = ''
-    setlocal nowrap
-
-    " from DicWinLeave
-    2 wincmd _
-    normal! zt
-
-    nnoremap <silent> <buffer> q :call <SID>Close()<CR>
-  endif
-endfunction
-
-function! s:GoDictWindow()
-  return s:GoMarkedWindow('dicwin_dicwin')
-endfunction
-
-function! s:GetMarkedWindow(name)
-  let winnum = 1
-  while winbufnr(winnum) >= 0
-    if getwinvar(winnum, a:name) > 0
-      return winnum
-    endif
-    let winnum = winnum + 1
-  endwhile
-  return -1
-endfunction
-
-function! s:GoMarkedWindow(name)
-  let winnum = s:GetMarkedWindow(a:name)
-  if winnum > 0 && winnr() != winnum
-    execute winnum.'wincmd w'
-  endif
-  return winnum
-endfunction
-
-function! s:PrevWindowMark()
-  let w:dicwin_prevwin = 1
-endfunction
-
-function! s:PrevWindowRevert()
-  if s:GoMarkedWindow('dicwin_prevwin') > 0
-    unlet w:dicwin_prevwin
-  endif
-endfunction
-
-call s:DicwinOnload()
-
-
-" Kemaps
-nnoremap <silent> <Leader>k :call <SID>OpenDictionary(g:dicwin_dictpath, expand('<cword>'))<CR>
-"nnoremap <silent> <Leader>n :call <SID>Search(g:dicwin_dictpath, 0)<CR>
-"nnoremap <silent> <Leader>p :call <SID>Search(g:dicwin_dictpath, 1)<CR>
-"nnoremap <silent> <Leader>w :call <SID>GoDictWindow()<CR>
-"nnoremap <silent> <Leader>c :call <SID>Close()<CR>
-"nnoremap <silent> <Leader>/ :call <SID>Query()<CR>
-"nnoremap <silent> <Leader><C-k> :call <SID>OpenDictionary(g:dicwin_dictpath, expand('<cword>'))<CR>
-"nnoremap <silent> <Leader><C-n> :call <SID>Search(g:dicwin_dictpath, 0)<CR>
-"nnoremap <silent> <Leader><C-p> :call <SID>Search(g:dicwin_dictpath, 1)<CR>
-"nnoremap <silent> <Leader><C-w> :call <SID>GoDictWindow()<CR>
-
-
-function! s:auto(switch)
-  let b:DictwinAuto = a:switch
-  augroup dictwin
-    au!
-    if a:switch
-      let s:updatetime = &updatetime
-      let &updatetime = 500
-      au CursorHold <buffer> call <SID>OpenDictionary(g:dicwin_dictpath, expand('<cword>'))
-    else
-      let &updatetime = s:updatetime
-    endif
-  augroup end
-endfunction
-com! DictwinAuto call <SID>auto(1)
-com! DictwinOff  call <SID>auto(0)
-
-"let g:DictwinAuto = v:false
-let s:updatetime = &updatetime
-
-nnoremap <expr> <Leader>e ':<C-u>' . (exists('b:DictwinAuto') && b:DictwinAuto ? 'DictwinOff' : 'DictwinAuto') . '<CR>'
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 scriptencoding utf-8
 " vim:set ts=8 sts=2 sw=2 tw=0:
 
-if !has('win32')
-  finish
-endif
 
-
-" ファイル名の展開にスラッシュを使う
-set shellslash
-
-" Shellの設定 (Cygwinでも、なぜか設定しないとbashになる。)
-set sh=C:/cygwin/bin/zsh
-
-let s:home = 'C:/cygwin/home/' . $USERNAME
-
-if substitute($HOME, '\', '/', 'g') == s:home
-  " Cygwinから起動されたときの設定
-
-  " $TMPを(Cygwinではなく)Windowsのパスにそろえる。
-  "let $TMP  = 'C:/Users/' . $USERNAME . '/AppData/Local/Temp'
-  "let $TEMP = $TMP
-
-  " cygwinから起動されたときは、この後の設定を実施すると二重になる。
-  finish
-endif
-
-" $HOMEの設定
-if isdirectory(s:home)
-  let $HOME=s:home
-endif
-
-let $LANG = 'ja_JP.UTF-8'
-
-" PATHの追加
-let $PATH = 'C:/cygwin/bin;' . $PATH
-let $PATH = $HOME . '/bin;' . $PATH
-
-" ! や :! 等のコマンドを実行するためにシェルに渡されるフラグ。
-" 末尾のスペースは必要!!
-set shellcmdflag=-c\ 
-
-" ! や :! 等のコマンドでコマンドをシェルに渡すときに、コマンドを囲む引用符(の列)。
-set shellxquote=\"
-
-" runtimepathの追加
-exe 'set runtimepath+=C:/cygwin/home/' . $USERNAME . '/vimfiles/'
-exe 'set runtimepath+=C:/cygwin/home/' . $USERNAME . '/vimfiles/after'
-
-" packpathの追加
-exe 'set packpath+=C:/cygwin/home/' . $USERNAME . '/vimfiles/'
-exe 'set packpath+=C:/cygwin/home/' . $USERNAME . '/vimfiles/after'
+"nnoremap <buffer> <Leader>e :<C-u>so %<CR>
+nnoremap <buffer> <Leader>e :<C-u>w <Bar> so %<CR>
+"++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

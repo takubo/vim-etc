@@ -13,7 +13,10 @@ if 0
 
 vnoremap <nowait> i <Esc>:call feedkeys('gv' . ( line("'<") != line("'>") ? 'I' : 'i'), 'nt')<CR>
 
-else
+endif
+
+
+if 1
 
 vnoremap <silent> <Plug>(Visual-I) <Esc>:call feedkeys('gv' . ( line("'<") != line("'>") ? 'I' : 'i'), 'nt')<CR>
 vnoremap <Plug>(Visual-i) i

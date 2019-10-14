@@ -1026,11 +1026,13 @@ nmap <BS> <C-w>
 "----------------------------------------------------------------------------------------
 " Split
 
-" Auto
-nnoremap <silent> <expr> <Leader><Leader> ( <SID>WindowRatio() <  0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
-"nnoremap <silent> <expr> <BS><BS>         ( <SID>WindowRatio() >= 0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
-nnoremap <silent> <expr> <Plug>(MyVimrc-WindowSplitAuto)         ( <SID>WindowRatio() >= 0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
-nmap <BS><BS> <Plug>(MyVimrc-WindowSplitAuto)
+" Auto Split
+nnoremap <silent> <expr> <Plug>(MyVimrc-Window-AutoSplit)     ( <SID>WindowRatio() >= 0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
+nnoremap <silent> <expr> <Plug>(MyVimrc-Window-AutoSplit-Rev) ( <SID>WindowRatio() <  0 ? "\<C-w>v" : "\<C-w>s" ) . ':diffoff<CR>'
+
+nmap <BS><BS>         <Plug>(MyVimrc-Window-AutoSplit)
+nmap <Leader><Leader> <Plug>(MyVimrc-Window-AutoSplit-Rev)
+
 " Tag, Jump, and Unified CR を参照。
 
 " Manual
@@ -1042,7 +1044,6 @@ nnoremap <silent> g<Bar>           :<C-u>vnew<CR>
 
 " Auto New
 nnoremap <silent> <expr> <Plug>(MyVimrc-Window-AutoNew) ( winwidth(0) > (&columns * 7 / 10) && <SID>WindowRatio() >=  0 ) ? ':<C-u>vnew<CR>' : '<C-w>n'
-"nmap M <Plug>(MyVimrc-Window-AutoNew)
 
 "----------------------------------------------------------------------------------------
 " Close
@@ -1051,13 +1052,13 @@ nnoremap <silent> q         <C-w><C-c>
 nnoremap <silent> <Leader>q :<C-u>q<CR>
 
 " 補償
+nnoremap <silent> <C-q>  q
 nnoremap <silent> <C-q>; q:
 nnoremap <silent> <C-q>/ q/
 nnoremap <silent> <C-q>? q?
 
 " ウィンドウレイアウトを崩さないでバッファを閉じる   (http://nanasi.jp/articles/vim/kwbd_vim.html)
 com! CloseWindow let s:kwbd_bn = bufnr('%') | enew | exe 'bdel '. s:kwbd_bn | unlet s:kwbd_bn
-nnoremap <silent> <C-q><C-q> :<C-u>CloseWindow<CR>
 
 "----------------------------------------------------------------------------------------
 " Focus
@@ -1620,8 +1621,6 @@ augroup MyVimrc_MRU
 augroup end
 
 nnoremap <Leader>o :<C-u>MRU<Space>
-nnoremap go :<C-u>MRU<Space>
-nnoremap gO :<C-u>MRU<CR>
 
 " Mru }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -1890,13 +1889,14 @@ nnoremap <silent> gf :<C-u>aboveleft sp<CR>gF
 let g:clever_f_smart_case = 1
 
 let g:clever_f_use_migemo = 1
+
 com! CleverfUseMigemoToggle let g:clever_f_use_migemo = !g:clever_f_use_migemo | echo g:clever_f_use_migemo ? 'clever-f Use Migemo' : 'clever-f No Migemo'
 
 " fは必ず右方向に移動，Fは必ず左方向に移動する
 "let g:clever_f_fix_key_direction = 1
 
 " 任意の記号にマッチする文字を設定する
-let g:clever_f_chars_match_any_signs = '\\'
+let g:clever_f_chars_match_any_signs = "\<BS>"
 
 " 過去の入力の再利用
 "let g:clever_f_repeat_last_char_inputs = ["\<CR>"]	" ["\<CR>", "\<Tab>"]
@@ -1904,29 +1904,17 @@ let g:clever_f_chars_match_any_signs = '\\'
 " タイムアウト
 let g:clever_f_timeout_ms = 3000
 
-if 1
-  hi My_cleverf_Cursor guifg=yellow guibg=black
-  hi My_cleverf_Char   guifg=#ff4123 guibg=black
- "hi My_cleverf_Cursor guifg=cyan guibg=black
- "hi My_cleverf_Char   guifg=yellow guibg=black
-  augroup My_cleverf
+augroup MyVimrc_cleverf
     au!
     au ColorScheme * hi My_cleverf_Cursor guifg=yellow guibg=black
     au ColorScheme * hi My_cleverf_Char   guifg=#cff412 guibg=black
    "au ColorScheme * hi My_cleverf_Cursor guifg=cyan guibg=black
    "au ColorScheme * hi My_cleverf_Char   guifg=yellow guibg=black
-  augroup end
-  let g:clever_f_mark_cursor_color = 'My_cleverf_Cursor'
-  let g:clever_f_mark_char_color   = 'My_cleverf_Char'
- "let g:clever_f_mark_cursor = 1
- "let g:clever_f_mark_char = 1
-endif
-
-"function! s:clever_f_use_migemo_toggle()
-"  let g:clever_f_use_migemo = !g:clever_f_use_migemo
-"  echo g:clever_f_use_migemo ? 'clever_f_use_migemo' : 'No clever_f_use_migemo'
-"endfunction
-"nnoremap <Leader>k :<C-u>call <SID>clever_f_use_migemo_toggle()<CR>
+augroup end
+let g:clever_f_mark_cursor_color = 'My_cleverf_Cursor'
+let g:clever_f_mark_char_color   = 'My_cleverf_Char'
+"let g:clever_f_mark_cursor = 1
+"let g:clever_f_mark_char = 1
 
 " Clever-f }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -2197,9 +2185,7 @@ augroup end
 
 
 
-nnoremap <Leader><Space> :<C-u>let &iminsert = (&iminsert ? 0 : 2) <Bar> exe "colorscheme " . (&iminsert ? "Asche" : "Rimpa") <CR>
 nnoremap <Leader>j       :<C-u>let &iminsert = (&iminsert ? 0 : 2) <Bar> exe "colorscheme " . (&iminsert ? "Asche" : "Rimpa") <CR>
-"nnoremap        g<Space> :<C-u>let &iminsert = (&iminsert ? 0 : 2) <Bar> exe "colorscheme " . (&iminsert ? "Asche" : "Rimpa") <CR>
 
 
 
@@ -2303,8 +2289,47 @@ command! HighlightInfo call s:get_highlight_info()
 "-------------------------------------------------------------------
 
 
-nnoremap <Leader>4 :<C-u>setl noscrollbind<CR>
-nnoremap <Leader>4 :<C-u>setl scrollbind!<CR>
+nnoremap <Leader>$ :<C-u>setl scrollbind!<CR>
+nmap <Leader>4 <Leader>$
+
+
+
+" {{{
+function! SurroundLineBrace() range
+" echo a:firstline a:lastline
+" red
+" sleep 2
+  exe a:lastline
+  normal! o}
+  exe a:firstline
+  normal! O{
+  normal! j>i{>a{
+endfunction
+
+com! -range Brace <line1>,<line2>call SurroundLineBrace()
+vnoremap J :Brace<CR>
+" }}}
+
+
+
+" TODO 
+" BrowserJump  Orgへのジャンプもキーバインドを提供する
+
+
+
+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+if 0
+  nnoremap <C-i> g;
+  nnoremap <C-o> g,
+
+  nmap ' \
+
+  set whichwrap+=hl
+
+  set grepprg=git\ grep\ -I\ --line-number
+
+endif
+"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
 
@@ -2407,47 +2432,6 @@ nnoremap <Leader>4 :<C-u>setl scrollbind!<CR>
 "
 "(Esc_Esc)
 "
-
-
-
-
-
-
-
-
-" Line
-" 	1080
-" 	90
-" 
-" 	768
-" 	64
-" 
-" Col
-" 	1920
-" 	320
-" 
-" 	1024
-" 	170.666667
-" 
-" set lines=64 columns0171
-com! XGA set lines=64 columns=171
-
-" Thinkpad
-com! Thinkpad set lines=75 columns=267 | winpos 150 110
-
-
-
-
-"set grepprg=git\ grep\ -I\ --line-number
-
-
-
-" TODO 
-" BrowserJump  Orgへのジャンプもキーバインドを提供する
-
-
-
-set complete=.,w,b,u,i
 
 
 
@@ -2574,12 +2558,21 @@ if 0
   nnoremap <silent> <C-j> :<C-u>call WinWrapMove('j')<CR>
   nnoremap <silent> <C-k> :<C-u>call WinWrapMove('k')<CR>
   nnoremap <silent> <C-l> :<C-u>call WinWrapMove('l')<CR>
+
+  nnoremap H <C-w>+
+  nnoremap L <C-w>-
+
 endif
 
 if 1
   nnoremap <silent> H :<C-u>call WinWrapMove('h')<CR>
-  nnoremap <silent> J :<C-u>call WinWrapMove('j')<CR>
-  nnoremap <silent> K :<C-u>call WinWrapMove('k')<CR>
+  if 1
+    nnoremap <silent> J :<C-u>call WinWrapMove('j')<CR>
+    nnoremap <silent> K :<C-u>call WinWrapMove('k')<CR>
+  else
+    nmap J <Plug>(MyVimrc-SkipTerm-Inc)
+    nmap K <Plug>(MyVimrc-SkipTerm-Dec)
+  endif
   nnoremap <silent> L :<C-u>call WinWrapMove('l')<CR>
 
   if 1
@@ -2592,8 +2585,8 @@ if 1
     nmap <silent> <C-p>         <Plug>(BrowserJump-Back)
     nmap <silent> <C-n>         <Plug>(BrowserJump-Foward)
 
-    nmap <silent> <BS><C-p>     <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<C-p>
-    nmap <silent> <BS><C-n>     <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<C-n>
+    nmap <silent> <BS><C-p>     <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-p>
+    nmap <silent> <BS><C-n>     <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-n>
     "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     nmap <silent> <C-h> <C-w>+
@@ -2652,7 +2645,8 @@ nnoremap gL L
 
 
 
-nnoremap go :MRU 
+nnoremap go :<C-u>MRU<Space>
+nnoremap gO :<C-u>MRU<CR>
 nnoremap gw :<C-u>w<CR>
 nmap ge <Leader>e
 nmap gt <Plug>(PrjTree-MyExplore)
@@ -2663,83 +2657,59 @@ let g:submode_timeoutlen = 5000
 
 
 
-" Window Temp }}}}}}}}}}}}}}}}}}}}}}}
+" {{{
 
+let s:IsSpaceFree = v:false
 
-
-if 0
+if s:IsSpaceFree
 
   nnoremap <Space>w :<C-u>w<CR>
   nnoremap <Space>o :<C-u>MRU<Space>
 
-  nmap <silent> H         <Plug>(BrowserJump-Back)
-  nmap <silent> L         <Plug>(BrowserJump-Foward)
-
   nmap <Space>v <Leader>v
   nmap <Space>V <Leader>V
 
-  "nnoremap <leader>w :<C-u>w<CR>
   nmap <Leader>e <Nop>
   nmap <silent> <Space>e <Leader>e
+
   nmap <Space>- <Leader>-
   nmap <Space>_ <Leader>_
+
   nmap <Space>t <Leader>t
 
   nmap <Space><Space> <Leader><Space>
 
 endif
 
-
-
-"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-function! BlocBrace() range
-" echo a:firstline a:lastline
-" red
-" sleep 2
-  exe a:lastline
-  normal! o}
-  exe a:firstline
-  normal! O{
-  normal! j>i{>a{
-endfunction
-
-com! -range Brace <line1>,<line2>call BlocBrace()
-vnoremap J :Brace<CR>
-"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+" }}}
 
 
 
-"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-if 0
-  "nmap J <Plug>(MyVimrc-SkipTerm-Inc)
-  "nmap K <Plug>(MyVimrc-SkipTerm-Dec)
-
-  nnoremap <silent> <C-h> <C-w>h
-  nnoremap <silent> <C-l> <C-w>l
-  nnoremap <silent> <C-k> <C-w>k
-  nnoremap <silent> <C-j> <C-w>j
-
-  "nnoremap <silent> H <C-w>h
-  "nnoremap <silent> J <C-w>j
-  "nnoremap <silent> K <C-w>k
-  "nnoremap <silent> L <C-w>l
-
-  nnoremap H <C-w>+
-  nnoremap L <C-w>-
-
-  nnoremap <C-n> <C-w>+
-  nnoremap <C-p> <C-w>-
-
-  nnoremap <C-i> g;
-  nnoremap <C-o> g,
-
-endif
-"+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+" Window Temp }}}}}}}}}}}}}}}}}}}}}}}
 
 
 
-"set whichwrap+=hl
+" Line
+" 	1080
+" 	90
+" 
+" 	768
+" 	64
+" 
+" Col
+" 	1920
+" 	320
+" 
+" 	1024
+" 	170.666667
+" 
+" set lines=64 columns0171
+com! XGA set lines=64 columns=171
 
-nmap ' \
+" Thinkpad
+com! Thinkpad set lines=75 columns=267 | winpos 150 110
 
+
+
+set complete=.,w,b,u,i
 set mouse=n

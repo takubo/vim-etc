@@ -662,38 +662,29 @@ nmap <silent> <A-m> <Plug>(MyVimrc-LlPrev)
 " Tag, Jump, and Unified CR {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 
 " Browse
-"nnoremap H <C-o>
-"nnoremap L <C-i>
-nmap <silent> H         <Plug>(BrowserJump-Back)
-nmap <silent> L         <Plug>(BrowserJump-Foward)
-"nmap <silent> <Leader>H <Plug>(BrowserJump-Disp)
-"nmap <silent> <Leader>L <Plug>(BrowserJump-ToggleOrgPos)
-if 1
- "nmap <silent> <BS>H     <BS><BS><C-w>p<Plug>(BrowserJump-Back)
- "nmap <silent> <BS>L     <BS><BS><C-w>p<Plug>(BrowserJump-Foward)
- "nmap <silent> <BS>H     <Plug>(MyVimrc-WindowSplitAuto)<C-w>p<Plug>(BrowserJump-Back)
- "nmap <silent> <BS>L     <Plug>(MyVimrc-WindowSplitAuto)<C-w>p<Plug>(BrowserJump-Foward)
-  nnoremap <Plug>(MyVimrc-WinCmd-p) <C-w>p
-  nmap <silent> <BS>H     <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<Plug>(BrowserJump-Back)
-  nmap <silent> <BS>L     <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<Plug>(BrowserJump-Foward)
+if 0
+  "nnoremap H <C-o>
+  "nnoremap L <C-i>
+
+  "nmap H <Plug>(BrowserJump-Back)
+  "nmap L <Plug>(BrowserJump-Foward)
+
+  "nnoremap <silent> H :<C-u>pop<CR>
+  "nnoremap <silent> L :<C-u>tag<CR>
+
+  "nmap <BS>H <Plug>(MyVimrc-WindowSplitAuto)<C-w>p<Plug>(BrowserJump-Back)
+  "nmap <BS>L <Plug>(MyVimrc-WindowSplitAuto)<C-w>p<Plug>(BrowserJump-Foward)
+
+  "nmap <BS>H  <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<Plug>(BrowserJump-Back)
+  "nmap <BS>L  <Plug>(MyVimrc-WindowSplitAuto)<Plug>(MyVimrc-WinCmd-p)<Plug>(BrowserJump-Foward)
 else
-  nmap <silent> <BS>H     <Plug>(MyVimrc-WindowSplitAuto):wincmd p<CR><Plug>(BrowserJump-Back)
-  nmap <silent> <BS>L     <Plug>(MyVimrc-WindowSplitAuto):wincmd p<CR><Plug>(BrowserJump-Foward)
+  nmap <C-p>      <Plug>(BrowserJump-Back)
+  nmap <C-n>      <Plug>(BrowserJump-Foward)
+
+  nmap <BS><C-p>  <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-p>
+  nmap <BS><C-n>  <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-n>
 endif
 
-
-" 補償
-"noremap zh H
-"noremap zl L
-"nnoremap zm M
-"nnoremap <expr> zh &wrap ? 'H' : 'zh'
-"nnoremap <expr> zl &wrap ? 'L' : 'zl'
-" HorizScroll  noremap zk H
-" HorizScroll  noremap zj L
-
-" 補償の補償
-"noremap <C-@> zh
-"noremap <C-^> zl
 
 " ---------------
 " Unified CR
@@ -922,9 +913,9 @@ nnoremap d<S-Space> :<C-u>diffoff<CR>
 
 " diff accept (obtain and next, obtain and previouse) (dotは、repeat'.')
 nnoremap d. do1gs]c^
-nnoremap d, do1gs[c^
-nnoremap dO do1gs]c^
-nnoremap dP do1gs[c^
+nnoremap d, dp1gs]c^
+nnoremap dO do1gs[c^
+nnoremap dP dp1gs[c^
 
 " Next Hunk
 "nnoremap <silent> t ]c^zz:FuncNameStl<CR>
@@ -1129,6 +1120,10 @@ nnoremap <C-w><C-w> :<C-u>tab split<CR>
 nnoremap <C-w><C-t> <C-w>T
 
 tnoremap <C-w><C-t> <C-w>T
+
+"----------------------------------------------------------------------------------------
+" Plug
+nnoremap <Plug>(MyVimrc-WinCmd-p) <C-w>p
 
 " Window }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -1901,11 +1896,11 @@ let g:clever_f_chars_match_any_signs = "\<BS>"
 let g:clever_f_timeout_ms = 3000
 
 augroup MyVimrc_cleverf
-    au!
-    au ColorScheme * hi My_cleverf_Cursor guifg=yellow guibg=black
-    au ColorScheme * hi My_cleverf_Char   guifg=#cff412 guibg=black
-   "au ColorScheme * hi My_cleverf_Cursor guifg=cyan guibg=black
-   "au ColorScheme * hi My_cleverf_Char   guifg=yellow guibg=black
+  au!
+  au ColorScheme * hi My_cleverf_Cursor guifg=yellow guibg=black
+  au ColorScheme * hi My_cleverf_Char   guifg=#cff412 guibg=black
+  "au ColorScheme * hi My_cleverf_Cursor guifg=cyan guibg=black
+  "au ColorScheme * hi My_cleverf_Char   guifg=yellow guibg=black
 augroup end
 let g:clever_f_mark_cursor_color = 'My_cleverf_Cursor'
 let g:clever_f_mark_char_color   = 'My_cleverf_Char'
@@ -2553,10 +2548,12 @@ function! WinWrapMove(m)
       let num_move += 1
 
     endwhile
-  endif
 
-  if num_move == 0 && winnr('$') > 2
-    call WinWrapMove({'h' : 'k', 'j' : 'l', 'k' : 'h', 'l' : 'j'}[a:m])
+    " 適当に押しても、なるべく移動する。
+    " Windowが2以上ないと、無限再起に陥る。
+    if num_move == 0 && winnr('$') > 2
+      call WinWrapMove({'h' : 'k', 'j' : 'l', 'k' : 'h', 'l' : 'j'}[a:m])
+    endif
   endif
 endfunction
 
@@ -2590,16 +2587,15 @@ if 1
   if 1
     " 補償
 
-    "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    "nnoremap <silent> <C-p> :<C-u>pop<CR>
-    "nnoremap <silent> <C-n> :<C-u>tag<CR>
+    "noremap zh H
+    "noremap zl L
+    "noremap zm M
+    "noremap zk H
+    "noremap zj L
+    nnoremap gM M
+    nnoremap gH H
+    nnoremap gL L
 
-    nmap <silent> <C-p>         <Plug>(BrowserJump-Back)
-    nmap <silent> <C-n>         <Plug>(BrowserJump-Foward)
-
-    nmap <silent> <BS><C-p>     <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-p>
-    nmap <silent> <BS><C-n>     <Plug>(MyVimrc-Window-AutoSplit)<Plug>(MyVimrc-WinCmd-p)<C-n>
-    "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
     nmap <silent> <C-h> <C-w>+
     nmap <silent> <C-l> <C-w>-
@@ -2648,12 +2644,6 @@ nnoremap <silent> <C-i> ]c^:FuncNameStl<CR>
 nnoremap <silent> <C-o> [c^:FuncNameStl<CR>
 nnoremap <silent> <S-Tab> [c^:FuncNameStl<CR>
 "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-nnoremap gM M
-nnoremap gH H
-nnoremap gL L
 
 
 

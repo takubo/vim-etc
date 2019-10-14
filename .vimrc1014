@@ -141,7 +141,7 @@ augroup end
 
 ru macros/PushposPopPos.vim
 ru macros/EscEsc.vim
-packadd vim-submode-master
+packadd vim-submode
 
 
 
@@ -547,15 +547,17 @@ vnoremap         #   y:let lstmp = @"<CR>/\C\V<C-r>=escape(lstmp, '/\|\\')<CR><C
 
 " Substitute {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{
 
-nnoremap <C-s>           :<C-u>g$.$s    %%<Left>
-nnoremap S               :<C-u>g$.$s    %<C-R>/%%g<Left><Left>
+nnoremap S               :<C-u>g$.$s    %%<Left>
+nnoremap <C-s>           :<C-u>g$.$s    %<C-R>/%%g<Left><Left>
 nnoremap gs              :<C-u>g$.$s    %<C-R><C-W>%%g<Left><Left>
-nnoremap gS              :<C-u>g$.$s    %<C-R><C-W>%<C-R><C-W>%g<Left><Left>
+"nnoremap gS              :<C-u>g$.$s    %<C-R><C-W>%<C-R><C-W>%g<Left><Left>
+nnoremap gS              :<C-u>g$.$s    %<C-R>"%%g<Left><Left>
 nnoremap <Leader>s           :<C-u>s    %%%g<Left><Left><Left>
 
-vnoremap <C-s>                    :s    %%<Left>
-vnoremap S                        :s    %<C-R>/%%g<Left><Left>
+vnoremap S                        :s    %%<Left>
+vnoremap <C-s>                    :s    %<C-R>/%%g<Left><Left>
 vnoremap gs                       :s    %<C-R>/%<C-R><C-W>%g
+nnoremap gS                       :s    %<C-R>"%%g<Left><Left>
 
 "cnoremap <expr> <C-g> match(getcmdline(), '\(g.\..s\\|s\)    /') == 0 ? '<End>/g' :
 "                    \ match(getcmdline(), '\(g.\..s\\|s\)    %') == 0 ? '<End>/g' : ''
@@ -575,7 +577,7 @@ set grepprg=git\ grep\ --no-index\ -I\ --line-number
 nnoremap !             :<C-u>grep ''<Left>
 nnoremap <Leader>g     :<C-u>grep '<C-R>/'<CR>
 nnoremap <silent> <C-g><C-g> :<C-u>grep '\<<C-R><C-W>\>'<CR>
-nnoremap <silent> <C-g><C-g> :<C-u>grep '\<<C-R><C-W>\>' -- ':!.svn/' ':!tags' ':!report_flgRH850E1L-BIOS-01'<CR>
+nnoremap <silent> <C-g><C-g> :<C-u>grep '\<<C-R><C-W>\>' -- ':!.svn/' ':!tags'<CR>
 
 "========================================================
 
@@ -881,8 +883,8 @@ nnoremap <silent> <S-CR>       <Esc>:call Unified_CR('sp')<CR>
 nnoremap <silent> <C-S-CR>     <Esc>:call Unified_CR('sw')<CR>
 nnoremap          <C-S-CR>     <Esc>:tags<CR>;pop
 
-nmap     <silent> <BS><CR>     <BS><BS><CR>
-nmap     <silent> <Leader><CR> <BS><BS><CR>
+nmap <BS><CR>     <Plug>(MyVimrc-Window-AutoSplit)<CR>
+nmap <Leader><CR> <Plug>(MyVimrc-Window-AutoSplit-Rev)<CR>
 
 " Tag, Jump, and Unified CR }}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
 
@@ -958,20 +960,14 @@ nnoremap <expr> d<CR>
 vmap <leader>1 <Plug>(BlockDiff-GetBlock1)
 vmap <leader>2 <Plug>(BlockDiff-GetBlock2andExe)
 
-nnoremap d<CR> :<C-u>tab split<CR>:Gdiffsplit<CR>
-" 最後は<C-w>pだと、なぜかフォーカスがfugitive側に残ったままとなる。
-" Gdiffsplit後にはタブ内にウィンドウは2つしかないはずなので、<C-w>wでも一応は意図通りとなる。
-nnoremap <expr> d<CR> ':<C-u>' . ( winnr('$') > 1 ? 'tab split<CR>:' : '' ) . 'Gdiffsplit<CR>' . ':wincmd w'
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit <Bar> call feedkeys('<C-w>w', 'nt')
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit <Bar> call feedkeys(":wincmd w\<CR>", 'nt') <Bar> call feedkeys(":wincmd w\<CR>", 'nt')<CR>
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit<CR>:wincmd p<CR>
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit<CR>:wincmd w<CR>
-
-nnoremap <expr> d<CR> ':<C-u>' . ( winnr('$') > 1 ? 'tab split<CR>:' : '' ) . 'Gdiffsplit<CR>'
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit <Bar> call feedkeys('<C-v><C-w>w', 'nt')<CR>
-
+" Git Diff
+"nnoremap d<CR> :<C-u>tab split<CR>:Gdiffsplit<CR>
+" Windowが1つだけならそのタブで、そうでなければ新しいタブで実行。
+"nnoremap <expr> d<CR> ':<C-u>' . ( winnr('$') > 1 ? 'tab split<CR>:' : '' ) . 'Gdiffsplit<CR>'
+" Focusを元のWindowへ戻す。
+"nnoremap <expr> d<CR> ':<C-u>' . ( winnr('$') > 1 ? 'tab split<CR>:' : '' ) . 'Gdiffsplit<CR>' . ':wincmd p'
 " なぜかfeedkeysにしないと、ウィンドウ移動できない。マップ中にウィンドウを作成すると、それを認識できないようだ。
-nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit <Bar> call feedkeys('<C-v><C-w>p', 'nt')<CR>
+"nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' ) <Bar> Gdiffsplit <Bar> call feedkeys('<C-v><C-w>p', 'nt')<CR>
 " Gdiffsplit実行中は、コマンドラインにGdiffsplitが見えるようにする。
 nnoremap d<CR> :<C-u>exe ( winnr('$') > 1 ? 'tab split' : '' )<CR>:Gdiffsplit<CR>:call feedkeys('<C-v><C-w>p', 'nt')<CR>
 
@@ -2518,7 +2514,7 @@ nnoremap <silent> <Leader><Leader> :<C-u>call SetOptimalWinWidth()<CR>
 
 " Equal Window Height Only {{{
 
-function! Tate()
+function! WindowHeightOnlyEqual()
   windo let w:cur_fix_width = &l:winfixwidth
   windo let &l:winfixwidth = 1
   wincmd =
@@ -2533,18 +2529,34 @@ nnoremap <silent> @ :<C-u>call Tate()<CR>
 " Window Wrap Move {{{
 
 function! WinWrapMove(m)
+  if winnr('$') < 3
+    "Windowの数が3未満なら、もう一方へ移動することは自明。
+    wincmd w
+    return
+  endif
+
   let cur = winnr()
   exe 'wincmd ' . a:m
 
   if cur == winnr()
     let rev = {'h' : 'l', 'j' : 'k', 'k' : 'j', 'l' : 'h'}
+
+    let num_move = 0
+
     while 1
       let cur = winnr()
       exe 'wincmd ' . rev[a:m]
       if cur == winnr()
 	break
       endif
+
+      let num_move += 1
+
     endwhile
+  endif
+
+  if num_move == 0 && winnr('$') > 2
+    call WinWrapMove({'h' : 'k', 'j' : 'l', 'k' : 'h', 'l' : 'j'}[a:m])
   endif
 endfunction
 
@@ -2711,5 +2723,8 @@ com! Thinkpad set lines=75 columns=267 | winpos 150 110
 
 
 
+nnoremap <silent> <C-g><C-g> :<C-u>grep '\<<C-R><C-W>\>' -- ':!.svn/' ':!tags' ':!report_flgRH850E1L-BIOS-01'<CR>
+
 set complete=.,w,b,u,i
+
 set mouse=n

@@ -8,3 +8,5 @@ map L scrollRight
 
 map b previousTab
 map w nextTab
+
+# https?://mail.google.com/*  
